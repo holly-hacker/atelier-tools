@@ -6,7 +6,7 @@ use std::{
 	fs::File,
 	io::{self, Read, Seek},
 };
-use tracing::{debug, trace};
+use tracing::{debug, trace, warn};
 use utils::XorReader;
 
 pub use gust_common as common;
@@ -70,6 +70,14 @@ impl GustPak {
 
 		let current_offset = reader.stream_position()?;
 
+		if entries.len() != header.file_count as usize {
+			warn!(
+				"Header claims {} entries but read {}",
+				header.file_count,
+				entries.len()
+			);
+		}
+
 		Ok(Self {
 			header,
 			entries,
@@ -123,11 +131,7 @@ impl GustPak {
 
 #[derive(custom_debug::Debug)]
 struct PakHeader {
-	#[debug(format = "{:#x}")]
-	version: u32,
 	file_count: u32,
-	header_size: u32,
-	#[debug(format = "{:#b}")]
 	flags: u32,
 }
 
@@ -150,12 +154,7 @@ impl PakHeader {
 			return Err(PakReadError::TooManyFiles(file_count));
 		}
 
-		Ok(Self {
-			version,
-			file_count,
-			header_size,
-			flags,
-		})
+		Ok(Self { file_count, flags })
 	}
 }
 
