@@ -1,4 +1,4 @@
-use errors::{PakParsingStage, PakReadError, ParseError};
+use errors::PakReadError;
 use gust_common::GameVersion;
 use scroll::IOread;
 use std::{
@@ -38,8 +38,7 @@ impl GustPak {
 		debug!("Using game version: {:?}", game_version);
 		debug!("Using pak type: {:?}", pak_type);
 
-		let header = PakHeader::read(&mut reader)
-			.map_err(PakReadError::from_parse_stage(PakParsingStage::Header))?;
+		let header = PakHeader::read(&mut reader)?;
 
 		trace!(?header);
 
@@ -49,8 +48,7 @@ impl GustPak {
 				let mut entries: Vec<Entry64> = Vec::with_capacity(header.file_count as usize);
 
 				for _ in 0..header.file_count {
-					let entry = Entry64::read(&mut reader)
-						.map_err(PakReadError::from_parse_stage(PakParsingStage::Entries))?;
+					let entry = Entry64::read(&mut reader)?;
 					trace!(?entry);
 					entries.push(entry);
 				}
@@ -61,8 +59,7 @@ impl GustPak {
 				let mut entries: Vec<Entry64Ext> = Vec::with_capacity(header.file_count as usize);
 
 				for _ in 0..header.file_count {
-					let entry = Entry64Ext::read(&mut reader, pak_key)
-						.map_err(PakReadError::from_parse_stage(PakParsingStage::Entries))?;
+					let entry = Entry64Ext::read(&mut reader, pak_key)?;
 					trace!(?entry);
 					entries.push(entry);
 				}
@@ -135,22 +132,22 @@ struct PakHeader {
 }
 
 impl PakHeader {
-	fn read(mut reader: impl Read) -> Result<Self, ParseError> {
+	fn read(mut reader: impl Read) -> Result<Self, PakReadError> {
 		let version = reader.ioread()?;
 		let file_count = reader.ioread()?;
 		let header_size = reader.ioread()?;
 		let flags = reader.ioread()?;
 
 		if version != 0x20000 {
-			return Err(ParseError::InvalidHeaderVersion(version));
+			return Err(PakReadError::InvalidHeaderVersion(version));
 		}
 
 		if header_size != 16 {
-			return Err(ParseError::InvalidHeaderVersion(header_size));
+			return Err(PakReadError::InvalidHeaderVersion(header_size));
 		}
 
 		if file_count > 0x10000 {
-			return Err(ParseError::TooManyFiles(file_count));
+			return Err(PakReadError::TooManyFiles(file_count));
 		}
 
 		Ok(Self {
@@ -180,7 +177,7 @@ pub struct Entry64 {
 }
 
 impl Entry64 {
-	fn read(mut reader: impl Read) -> Result<Self, ParseError> {
+	fn read(mut reader: impl Read) -> Result<Self, PakReadError> {
 		// NOTE: this data type is only used for games before A22 and the pak key was only
 		// introduced in A23, so we don't need to handle this.
 
@@ -233,7 +230,7 @@ pub struct Entry64Ext {
 }
 
 impl Entry64Ext {
-	fn read(mut reader: impl Read, pak_key: Option<&[u8; 32]>) -> Result<Self, ParseError> {
+	fn read(mut reader: impl Read, pak_key: Option<&[u8; 32]>) -> Result<Self, PakReadError> {
 		let mut file_name_bytes = [0; 128];
 		reader.read_exact(&mut file_name_bytes)?;
 
