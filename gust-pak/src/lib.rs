@@ -161,7 +161,7 @@ impl PakHeader {
 // Not present: Entry32 used by A17 (Atelier Sophie)
 
 /// File entries for games starting from A18 (Atelier Firis)
-#[derive(custom_debug::Debug)]
+#[derive(custom_debug::Debug, Clone)]
 pub struct Entry64 {
 	file_name: String,
 	#[debug(format = "{:#x}")]
@@ -210,7 +210,7 @@ impl Entry64 {
 	}
 }
 
-#[derive(custom_debug::Debug)]
+#[derive(custom_debug::Debug, Clone)]
 /// File entries for games starting from A22 (Atelier Ryza 2)
 pub struct Entry64Ext {
 	file_name: String,
@@ -316,6 +316,24 @@ impl<'pak> Iterator for PakEntryIterator<'pak> {
 	}
 }
 
+/// An owned version of [PakEntry]
+#[derive(Debug, Clone)]
+pub enum PakEntryOwned {
+	// Entry32(Entry32),
+	Entry64(Entry64),
+	Entry64Ext(Entry64Ext),
+}
+
+impl PakEntryOwned {
+	pub fn as_ref(&self) -> PakEntry {
+		match self {
+			PakEntryOwned::Entry64(e) => PakEntry::Entry64(e),
+			PakEntryOwned::Entry64Ext(e) => PakEntry::Entry64Ext(e),
+		}
+	}
+}
+
+#[derive(Debug, Clone, Copy)]
 /// A common representation of a file in a .pak file.
 pub enum PakEntry<'pak> {
 	// Entry32(&'pak Entry32),
@@ -390,6 +408,13 @@ impl<'pak> PakEntry<'pak> {
 			file.take(self.get_file_size() as u64),
 			xor_key,
 		))
+	}
+
+	pub fn into_owned(self) -> PakEntryOwned {
+		match self {
+			PakEntry::Entry64(e) => PakEntryOwned::Entry64(e.clone()),
+			PakEntry::Entry64Ext(e) => PakEntryOwned::Entry64Ext(e.clone()),
+		}
 	}
 }
 
