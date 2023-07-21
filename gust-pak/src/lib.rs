@@ -24,7 +24,7 @@ pub struct GustPak {
 	pub entries: PakEntryList,
 
 	/// the offset at which the entries begin
-	data_offset: u64,
+	data_start: u64,
 }
 
 impl GustPak {
@@ -68,7 +68,7 @@ impl GustPak {
 			}
 		};
 
-		let current_offset = reader.stream_position()?;
+		let data_start = reader.stream_position()?;
 
 		if entries.len() != header.file_count as usize {
 			warn!(
@@ -81,7 +81,7 @@ impl GustPak {
 		Ok(Self {
 			header,
 			entries,
-			data_offset: current_offset,
+			data_start,
 		})
 	}
 
@@ -168,9 +168,9 @@ pub struct Entry64 {
 	file_size: u32,
 	/// The xor key used to decrypt the file name and content.
 	file_key: [u8; 20],
-	/// The offset of this file's data in the .pak file.
+	/// The data offset of this file's data in the .pak file. This is not the file offset.
 	#[debug(format = "{:#x}")]
-	file_offset: u64,
+	data_offset: u64,
 	#[debug(format = "{:#x}")]
 	flags: u64,
 }
@@ -188,7 +188,7 @@ impl Entry64 {
 		let mut file_key = [0; 20];
 		reader.read_exact(&mut file_key)?;
 
-		let file_offset = reader.ioread()?;
+		let data_offset = reader.ioread()?;
 		let flags = reader.ioread()?;
 
 		// decrypt filename
@@ -204,7 +204,7 @@ impl Entry64 {
 			file_name,
 			file_size: size,
 			file_key,
-			file_offset,
+			data_offset,
 			flags,
 		})
 	}
@@ -221,9 +221,9 @@ pub struct Entry64Ext {
 	file_key: [u8; 32],
 	#[debug(format = "{:#x}")]
 	extra: u32,
-	/// The offset of this file's data in the .pak file.
+	/// The data offset of this file's data in the .pak file. This is not the file offset.
 	#[debug(format = "{:#x}")]
-	file_offset: u64,
+	data_offset: u64,
 	#[debug(format = "{:#x}")]
 	flags: u64,
 }
@@ -239,7 +239,7 @@ impl Entry64Ext {
 		reader.read_exact(&mut file_key)?;
 
 		let extra = reader.ioread()?;
-		let file_offset = reader.ioread()?;
+		let data_offset = reader.ioread()?;
 		let flags = reader.ioread()?;
 
 		// decrypt filename
@@ -256,7 +256,7 @@ impl Entry64Ext {
 			file_size,
 			file_key,
 			extra,
-			file_offset,
+			data_offset,
 			flags,
 		})
 	}
@@ -359,10 +359,10 @@ impl<'pak> PakEntry<'pak> {
 	}
 
 	/// Gets the file offset
-	fn get_file_offset(&'pak self) -> u64 {
+	fn get_data_offset(&'pak self) -> u64 {
 		match self {
-			PakEntry::Entry64(e) => e.file_offset,
-			PakEntry::Entry64Ext(e) => e.file_offset,
+			PakEntry::Entry64(e) => e.data_offset,
+			PakEntry::Entry64Ext(e) => e.data_offset,
 		}
 	}
 
@@ -401,9 +401,7 @@ impl<'pak> PakEntry<'pak> {
 		let xor_key = &pak_key[..file_key.len()];
 		trace!("Creating reader with xor key: {:?}", xor_key);
 
-		file.seek(io::SeekFrom::Start(
-			self.get_file_offset() + pak.data_offset,
-		))?;
+		file.seek(io::SeekFrom::Start(pak.data_start + self.get_data_offset()))?;
 		Ok(XorReader::new(
 			file.take(self.get_file_size() as u64),
 			xor_key,
