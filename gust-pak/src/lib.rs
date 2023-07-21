@@ -284,7 +284,7 @@ impl PakEntryList {
 	}
 
 	/// Creates an iterator over a common representation of the entries.
-	pub fn iter(&self) -> impl Iterator<Item = PakEntry> + '_ {
+	pub fn iter(&self) -> impl Iterator<Item = PakEntryRef> + '_ {
 		PakEntryIterator {
 			list: self,
 			index: 0,
@@ -298,19 +298,19 @@ struct PakEntryIterator<'pak> {
 }
 
 impl<'pak> Iterator for PakEntryIterator<'pak> {
-	type Item = PakEntry<'pak>;
+	type Item = PakEntryRef<'pak>;
 
 	fn next(&mut self) -> Option<Self::Item> {
 		match self.list {
 			PakEntryList::Entry64(v) => {
 				let entry = v.get(self.index)?;
 				self.index += 1;
-				Some(PakEntry::Entry64(entry))
+				Some(PakEntryRef::Entry64(entry))
 			}
 			PakEntryList::Entry64Ext(v) => {
 				let entry = v.get(self.index)?;
 				self.index += 1;
-				Some(PakEntry::Entry64Ext(entry))
+				Some(PakEntryRef::Entry64Ext(entry))
 			}
 		}
 	}
@@ -318,59 +318,59 @@ impl<'pak> Iterator for PakEntryIterator<'pak> {
 
 /// An owned version of [PakEntry]
 #[derive(Debug, Clone)]
-pub enum PakEntryOwned {
+pub enum PakEntry {
 	// Entry32(Entry32),
 	Entry64(Entry64),
 	Entry64Ext(Entry64Ext),
 }
 
-impl PakEntryOwned {
-	pub fn as_ref(&self) -> PakEntry {
+impl PakEntry {
+	pub fn as_ref(&self) -> PakEntryRef {
 		match self {
-			PakEntryOwned::Entry64(e) => PakEntry::Entry64(e),
-			PakEntryOwned::Entry64Ext(e) => PakEntry::Entry64Ext(e),
+			PakEntry::Entry64(e) => PakEntryRef::Entry64(e),
+			PakEntry::Entry64Ext(e) => PakEntryRef::Entry64Ext(e),
 		}
 	}
 }
 
 #[derive(Debug, Clone, Copy)]
 /// A common representation of a file in a .pak file.
-pub enum PakEntry<'pak> {
+pub enum PakEntryRef<'pak> {
 	// Entry32(&'pak Entry32),
 	Entry64(&'pak Entry64),
 	Entry64Ext(&'pak Entry64Ext),
 }
 
-impl<'pak> PakEntry<'pak> {
+impl<'pak> PakEntryRef<'pak> {
 	/// Gets the file name
 	pub fn get_file_name(&'pak self) -> &'pak str {
 		match self {
-			PakEntry::Entry64(e) => &e.file_name,
-			PakEntry::Entry64Ext(e) => &e.file_name,
+			PakEntryRef::Entry64(e) => &e.file_name,
+			PakEntryRef::Entry64Ext(e) => &e.file_name,
 		}
 	}
 
 	/// Gets the file size
 	pub fn get_file_size(&'pak self) -> u32 {
 		match self {
-			PakEntry::Entry64(e) => e.file_size,
-			PakEntry::Entry64Ext(e) => e.file_size,
+			PakEntryRef::Entry64(e) => e.file_size,
+			PakEntryRef::Entry64Ext(e) => e.file_size,
 		}
 	}
 
 	/// Gets the file offset
 	fn get_data_offset(&'pak self) -> u64 {
 		match self {
-			PakEntry::Entry64(e) => e.data_offset,
-			PakEntry::Entry64Ext(e) => e.data_offset,
+			PakEntryRef::Entry64(e) => e.data_offset,
+			PakEntryRef::Entry64Ext(e) => e.data_offset,
 		}
 	}
 
 	/// Gets the file's encryption key
 	fn get_file_key(&'pak self) -> &'pak [u8] {
 		match self {
-			PakEntry::Entry64(e) => &e.file_key,
-			PakEntry::Entry64Ext(e) => &e.file_key,
+			PakEntryRef::Entry64(e) => &e.file_key,
+			PakEntryRef::Entry64Ext(e) => &e.file_key,
 		}
 	}
 
@@ -408,10 +408,10 @@ impl<'pak> PakEntry<'pak> {
 		))
 	}
 
-	pub fn into_owned(self) -> PakEntryOwned {
+	pub fn into_owned(self) -> PakEntry {
 		match self {
-			PakEntry::Entry64(e) => PakEntryOwned::Entry64(e.clone()),
-			PakEntry::Entry64Ext(e) => PakEntryOwned::Entry64Ext(e.clone()),
+			PakEntryRef::Entry64(e) => PakEntry::Entry64(e.clone()),
+			PakEntryRef::Entry64Ext(e) => PakEntry::Entry64Ext(e.clone()),
 		}
 	}
 }
