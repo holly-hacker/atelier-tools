@@ -73,7 +73,7 @@ fn main() {
 	info!("Time elapsed: {:?}", time_elapsed);
 
 	if let Err(e) = result {
-		error!("Error: {}", e);
+		error!("Error: {:?}", e);
 	}
 }
 
