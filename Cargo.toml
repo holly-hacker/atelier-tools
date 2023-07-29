@@ -1,2 +1,2 @@
 [workspace]
-members = ["cli", "gust-pak", "gust-common"]
+members = ["cli", "gust-pak", "gust-g1t", "gust-common"]
