@@ -135,7 +135,7 @@ impl TestG1tCompatibility {
 		}
 		if !matches!(texture.header.texture_type, 0x5F) {
 			return Err(format!(
-				"Unsupported texture type: 0x{:2X}",
+				"Unsupported texture type: 0x{:02X}",
 				texture.header.texture_type
 			)
 			.into());

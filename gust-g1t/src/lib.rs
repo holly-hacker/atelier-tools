@@ -174,7 +174,7 @@ impl GustG1t {
 			// Some(x) => todo!("DDS format {:?} is not yet supported", x),
 			None => Err(G1tReadError::Unimplemented(
 				format!(
-					"texture format 0x{:2X} is not yet supported",
+					"texture format 0x{:02X} is not yet supported",
 					texture.header.texture_type
 				)
 				.into(),
