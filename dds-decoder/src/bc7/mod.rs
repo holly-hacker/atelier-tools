@@ -8,13 +8,12 @@ pub fn read_image(data: &[u8], width: usize, height: usize) -> Result<Vec<u8>, B
 	let blocks_x = usize::max(1, (width + 3) / 4);
 	let blocks_y = usize::max(1, (height + 3) / 4);
 	let block_count = blocks_x * blocks_y;
-	let encoded_size = block_count * 16;
-	let pixel_count = encoded_size; // BC7 has a compression ratio of exactly 1:4, so this lines up for RGBA8
+	let pixel_count = block_count * 16;
 
 	// assume 128 bits are read at once (16 bytes)
 	// the size of each chunk is a 4x4 block of rgba8 pixels
 	let mut decoded_pixels = vec![Color4::default(); pixel_count];
-	for (chunk_index, chunk) in data.chunks(16).enumerate() {
+	for (chunk_index, chunk) in data.chunks_exact(16).enumerate() {
 		let span = tracing::trace_span!("chunk", chunk_index);
 		let _guard = span.enter();
 

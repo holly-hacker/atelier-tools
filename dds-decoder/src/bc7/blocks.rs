@@ -40,6 +40,8 @@ const WEIGHTS3: [u8; 8] = [0, 9, 18, 27, 37, 46, 55, 64];
 const WEIGHTS4: [u8; 16] = [0, 4, 9, 13, 17, 21, 26, 30, 34, 38, 43, 47, 51, 55, 60, 64];
 
 pub fn decode(data: &[u8]) -> Result<ColorBlock, Bc7Error> {
+	debug_assert_eq!(data.len(), 16);
+
 	let mode = data[0].trailing_zeros() as u8;
 	// trace!(mode, "Decoding BC7");
 
