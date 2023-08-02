@@ -188,6 +188,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "dds-decoder"
+version = "0.0.0"
+dependencies = [
+ "tracing",
+]
+
+[[package]]
 name = "either"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -289,6 +296,7 @@ version = "0.0.0"
 dependencies = [
  "bitflags 2.3.3",
  "custom_debug",
+ "dds-decoder",
  "gust-common",
  "scroll",
  "strum",

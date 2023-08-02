@@ -8,6 +8,7 @@ edition = "2021"
 [dependencies]
 bitflags = "2.3.3"
 custom_debug = "0.5.1"
+dds-decoder = { path = "../dds-decoder" }
 gust-common = { path = "../gust-common" }
 scroll = "0.11.0"
 strum = { version = "0.25.0", features = ["derive"] }

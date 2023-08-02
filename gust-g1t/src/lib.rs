@@ -1,4 +1,3 @@
-mod bc7;
 pub mod errors;
 mod util;
 
@@ -8,8 +7,6 @@ use errors::G1tReadError;
 use scroll::IOread;
 use tracing::{debug, trace, warn};
 use ux::u4;
-
-use crate::bc7::Color4;
 
 pub struct GustG1t {
 	#[allow(unused)]
@@ -142,6 +139,14 @@ impl GustG1t {
 			todo!("Only BC7 textures are supported for now");
 		}
 
+		if (<u4 as Into<u32>>::into(texture.header.mipmaps)) > 1 {
+			todo!("Mipmaps are not supported for now");
+		}
+
+		if (<u4 as Into<u32>>::into(texture.header.z_mipmaps)) > 1 {
+			todo!("Z-mipmaps are not supported for now");
+		}
+
 		if texture.frames > 1 {
 			todo!(
 				"Texture has {} frames, only 1 is supported for now",
@@ -149,56 +154,28 @@ impl GustG1t {
 			);
 		}
 
-		// size for BC7
-		// assuming mipmap level 0
-		let blocks_x = usize::max(1, (texture.width as usize + 3) / 4);
-		let blocks_y = usize::max(1, (texture.height as usize + 3) / 4);
-		let block_count = blocks_x * blocks_y;
-		let encoded_size = block_count * 16;
-		let pixel_count = encoded_size; // BC7 has a compression ratio of exactly 1:4, so this lines up for RGBA8
-		debug!(?encoded_size, "Size of encoded image data");
+		match texture.header.texture_type {
+			0x5F => {
+				// assuming mipmap level 0
+				let blocks_x = usize::max(1, (texture.width as usize + 3) / 4);
+				let blocks_y = usize::max(1, (texture.height as usize + 3) / 4);
+				let encoded_data_size = blocks_x * blocks_y * 16;
+				debug!(?encoded_data_size, "Size of encoded image data");
 
-		reader.seek(std::io::SeekFrom::Start(texture.absolute_data_offset))?;
+				reader.seek(std::io::SeekFrom::Start(texture.absolute_data_offset))?;
 
-		let mut data = vec![0u8; encoded_size];
-		reader.read_exact(&mut data)?;
+				let mut data = vec![0u8; encoded_data_size];
+				reader.read_exact(&mut data)?;
+				debug!(len = data.len(), "Data read");
 
-		debug!(len = data.len(), "Data read");
-
-		// assume 128 bits are read at once (16 bytes)
-		// the size of each chunk is a 4x4 block of rgba8 pixels
-		let mut decoded_pixels = vec![Color4::default(); pixel_count];
-		for (chunk_index, chunk) in data.chunks(16).enumerate() {
-			let pos = texture.absolute_data_offset + (chunk_index as u64 * 16);
-			let span = tracing::trace_span!("chunk", chunk_index, pos = format!("0x{pos:x}"));
-			let _guard = span.enter();
-
-			let chunk = bc7::decode(chunk);
-
-			// copy the chunk into the decoded pixels
-			let chunk_x = (chunk_index % blocks_x) * 4;
-			let chunk_y = (chunk_index / blocks_x) * 4;
-			let target_index = chunk_y * (blocks_x * 4) + chunk_x;
-
-			#[allow(clippy::needless_range_loop)]
-			for y in 0..4 {
-				for x in 0..4 {
-					let target_index = target_index + y * (blocks_x * 4) + x;
-					decoded_pixels[target_index] = chunk[y][x];
-				}
+				Ok(dds_decoder::read_bc7_image(
+					&data,
+					texture.width as usize,
+					texture.height as usize,
+				))
 			}
+			_ => todo!("Only BC7 textures are supported for now"),
 		}
-
-		// TODO: this could still be too big if the original image dimensions are not divisible by 4!
-		// we need to allocate a new buffer that has the correct width and height
-		let decoded_pixels = decoded_pixels
-			.into_iter()
-			.flat_map(|color| color.0)
-			.collect::<Vec<_>>();
-
-		debug!("image decoded");
-
-		Ok(decoded_pixels)
 	}
 }
 

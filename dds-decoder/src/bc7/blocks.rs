@@ -6,6 +6,8 @@
 // TODO: implement correct error handling for this module
 // TODO: consider using const generics to make the `mode` parameter generic. may help with speed.
 
+use crate::Color4;
+
 type ColorBlock = [[Color4; 4]; 4];
 
 #[rustfmt::skip]
@@ -49,9 +51,6 @@ pub fn decode(data: &[u8]) -> ColorBlock {
 		_ => panic!("unknown mode: {}", mode),
 	}
 }
-
-#[derive(Default, Debug, Copy, Clone)]
-pub struct Color4(pub [u8; 4]);
 
 fn decode_mode_1_3_7(data: &[u8], mode: usize) -> ColorBlock {
 	const ENDPOINTS: usize = 4;
