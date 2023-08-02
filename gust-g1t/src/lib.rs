@@ -6,7 +6,6 @@ use std::io::{Read, Seek};
 use errors::G1tReadError;
 use scroll::IOread;
 use tracing::{debug, trace, warn};
-use ux::u4;
 
 pub struct GustG1t {
 	#[allow(unused)]
@@ -139,11 +138,11 @@ impl GustG1t {
 			todo!("Only BC7 textures are supported for now");
 		}
 
-		if (<u4 as Into<u32>>::into(texture.header.mipmaps)) > 1 {
+		if texture.header.mipmaps > 1 {
 			todo!("Mipmaps are not supported for now");
 		}
 
-		if (<u4 as Into<u32>>::into(texture.header.z_mipmaps)) > 1 {
+		if texture.header.z_mipmaps > 1 {
 			todo!("Z-mipmaps are not supported for now");
 		}
 
@@ -258,19 +257,15 @@ impl G1tHeader {
 	}
 }
 
-#[derive(custom_debug::Debug)]
+#[derive(Debug)]
 struct G1tTextureHeader {
-	#[debug(format = "{}")]
-	z_mipmaps: u4,
-	#[debug(format = "{}")]
-	mipmaps: u4,
+	z_mipmaps: u8,
+	mipmaps: u8,
 	texture_type: u8,
 	/// X size, as a power of 2
-	#[debug(format = "{}")]
-	dx: u4,
+	dx: u8,
 	/// Y size, as a power of 2
-	#[debug(format = "{}")]
-	dy: u4,
+	dy: u8,
 	flags: TextureFlags,
 }
 
@@ -283,16 +278,13 @@ impl G1tTextureHeader {
 		reader.read_exact(&mut flags[3..8])?;
 		let flags = TextureFlags::from_bits_retain(u64::from_be_bytes(flags));
 
-		let (z_mipmaps, mipmaps) = (
-			u4::new(packed_mipmaps & 0x0F),
-			u4::new((packed_mipmaps & 0xF0) >> 4),
-		);
+		let (z_mipmaps, mipmaps) = (packed_mipmaps & 0x0F, ((packed_mipmaps & 0xF0) >> 4));
 		let (dx, dy) = (
-			u4::new(packed_dimensions & 0x0F),
-			u4::new((packed_dimensions & 0xF0) >> 4),
+			(packed_dimensions & 0x0F),
+			((packed_dimensions & 0xF0) >> 4),
 		);
 
-		if mipmaps == u4::new(0) {
+		if mipmaps == (0) {
 			return Err(G1tReadError::NoMipmaps);
 		}
 
@@ -307,12 +299,12 @@ impl G1tTextureHeader {
 	}
 
 	pub fn width(&self) -> u32 {
-		1 << (<u4 as Into<u32>>::into(self.dx))
+		1 << self.dx
 	}
 
 	pub fn height(&self) -> u32 {
 		// TODO: also depends on DOUBLE_HEIGHT flag
-		1 << (<u4 as Into<u32>>::into(self.dy))
+		1 << self.dy
 	}
 }
 
