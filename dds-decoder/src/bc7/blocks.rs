@@ -6,7 +6,7 @@
 // TODO: implement correct error handling for this module
 // TODO: consider using const generics to make the `mode` parameter generic. may help with speed.
 
-use crate::Color4;
+use crate::{errors::Bc7Error, Color4};
 
 type ColorBlock = [[Color4; 4]; 4];
 
@@ -39,27 +39,30 @@ const WEIGHTS2: [u8; 4] = [0, 21, 43, 64];
 const WEIGHTS3: [u8; 8] = [0, 9, 18, 27, 37, 46, 55, 64];
 const WEIGHTS4: [u8; 16] = [0, 4, 9, 13, 17, 21, 26, 30, 34, 38, 43, 47, 51, 55, 60, 64];
 
-pub fn decode(data: &[u8]) -> ColorBlock {
-	let mode = data[0].trailing_zeros() as usize;
+pub fn decode(data: &[u8]) -> Result<ColorBlock, Bc7Error> {
+	let mode = data[0].trailing_zeros() as u8;
 	// trace!(mode, "Decoding BC7");
 
 	match mode {
-		0 | 2 => todo!("mode 0/2"),
-		1 | 3 | 7 => decode_mode_1_3_7(data, mode),
-		4 | 5 => decode_mode_4_5(data, mode),
-		6 => decode_mode_6(data),
-		_ => panic!("unknown mode: {}", mode),
+		0 | 2 => Err(Bc7Error::UnimplementedBc7BlockMode(mode)),
+		1 | 3 | 7 => Ok(decode_mode_1_3_7(data, mode)),
+		4 | 5 => Ok(decode_mode_4_5(data, mode)),
+		6 => Ok(decode_mode_6(data)),
+		_ => Err(Bc7Error::InvalidBc7BlockMode(mode)),
 	}
 }
 
-fn decode_mode_1_3_7(data: &[u8], mode: usize) -> ColorBlock {
+fn decode_mode_1_3_7(data: &[u8], mode: u8) -> ColorBlock {
+	debug_assert!(matches!(mode, 1 | 3 | 7));
+
 	const ENDPOINTS: usize = 4;
 	let comps: usize = if mode == 7 { 4 } else { 3 };
 	let weight_bits: usize = if mode == 1 { 3 } else { 2 };
 	let endpoint_bits: usize = match mode {
-		7 => 5,
 		1 => 6,
-		_ => 7,
+		3 => 7,
+		7 => 5,
+		_ => unreachable!(),
 	};
 	let pbits_count: usize = if mode == 1 { 2 } else { 4 };
 	let shared_pbits: bool = mode == 1;
@@ -67,7 +70,7 @@ fn decode_mode_1_3_7(data: &[u8], mode: usize) -> ColorBlock {
 
 	let mut bit_offset = 0;
 
-	let read_mode = read_bits32(data, &mut bit_offset, mode + 1).trailing_zeros() as usize;
+	let read_mode = read_bits32(data, &mut bit_offset, mode as usize + 1).trailing_zeros() as u8;
 	debug_assert_eq!(read_mode, mode);
 
 	let part = read_bits32(data, &mut bit_offset, 6) as usize;
@@ -144,7 +147,7 @@ fn decode_mode_1_3_7(data: &[u8], mode: usize) -> ColorBlock {
 	ret
 }
 
-fn decode_mode_4_5(data: &[u8], mode: usize) -> ColorBlock {
+fn decode_mode_4_5(data: &[u8], mode: u8) -> ColorBlock {
 	debug_assert!(mode == 4 || mode == 5);
 
 	const ENDPOINTS: usize = 2;
@@ -154,7 +157,7 @@ fn decode_mode_4_5(data: &[u8], mode: usize) -> ColorBlock {
 
 	let mut bit_offset = 0;
 
-	let read_mode = read_bits32(data, &mut bit_offset, mode + 1).trailing_zeros() as usize;
+	let read_mode = read_bits32(data, &mut bit_offset, mode as usize + 1).trailing_zeros() as u8;
 	debug_assert_eq!(read_mode, mode);
 
 	let comp_rot = read_bits32(data, &mut bit_offset, 2) as usize;
@@ -384,6 +387,6 @@ fn bc7_interp(l: u8, h: u8, w: usize, bits: usize) -> u8 {
 		2 => bc7_interp2(l, h, w),
 		3 => bc7_interp3(l, h, w),
 		4 => bc7_interp4(l, h, w),
-		_ => panic!("bad bits value in bc_interp"),
+		_ => unreachable!("bad bits value in bc_interp"),
 	}
 }

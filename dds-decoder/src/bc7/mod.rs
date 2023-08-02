@@ -2,9 +2,9 @@ mod blocks;
 
 use tracing::debug;
 
-use crate::Color4;
+use crate::{errors::Bc7Error, Color4};
 
-pub fn read_image(data: &[u8], width: usize, height: usize) -> Vec<u8> {
+pub fn read_image(data: &[u8], width: usize, height: usize) -> Result<Vec<u8>, Bc7Error> {
 	let blocks_x = usize::max(1, (width + 3) / 4);
 	let blocks_y = usize::max(1, (height + 3) / 4);
 	let block_count = blocks_x * blocks_y;
@@ -18,7 +18,7 @@ pub fn read_image(data: &[u8], width: usize, height: usize) -> Vec<u8> {
 		let span = tracing::trace_span!("chunk", chunk_index);
 		let _guard = span.enter();
 
-		let chunk = blocks::decode(chunk);
+		let chunk = blocks::decode(chunk)?;
 
 		// copy the chunk into the decoded pixels
 		let chunk_x = (chunk_index % blocks_x) * 4;
@@ -43,5 +43,5 @@ pub fn read_image(data: &[u8], width: usize, height: usize) -> Vec<u8> {
 
 	debug!("image decoded");
 
-	decoded_pixels
+	Ok(decoded_pixels)
 }

@@ -166,7 +166,7 @@ impl GustG1t {
 					&data,
 					texture.width as usize,
 					texture.height as usize,
-				))
+				)?)
 			}
 			// Some(x) => todo!("DDS format {:?} is not yet supported", x),
 			None => todo!(

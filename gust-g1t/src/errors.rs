@@ -10,6 +10,8 @@ pub enum G1tReadError {
 	FromUtf8Error(#[from] std::string::FromUtf8Error),
 	#[error("C string has no null terminator: {0}")]
 	CStringFromBytesUntilNullError(#[from] core::ffi::FromBytesUntilNulError),
+	#[error("DDS decode error: {0}")]
+	DdsDecodeError(#[from] dds_decoder::errors::DdsDecodeError),
 
 	#[error("Invalid header magic: {0:#x} (expected 'G1TG' or 'GT1G')")]
 	InvalidHeaderMagic(u32),

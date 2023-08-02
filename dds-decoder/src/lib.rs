@@ -1,9 +1,16 @@
-mod bc7;
-mod errors;
+use errors::DdsDecodeError;
 
-pub fn decode_image(format: DdsFormat, data: &[u8], width: usize, height: usize) -> Vec<u8> {
+mod bc7;
+pub mod errors;
+
+pub fn decode_image(
+	format: DdsFormat,
+	data: &[u8],
+	width: usize,
+	height: usize,
+) -> Result<Vec<u8>, DdsDecodeError> {
 	match format {
-		DdsFormat::BC7 => bc7::read_image(data, width, height),
+		DdsFormat::BC7 => Ok(bc7::read_image(data, width, height)?),
 	}
 }
 
