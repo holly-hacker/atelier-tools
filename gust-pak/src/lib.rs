@@ -3,13 +3,14 @@ use gust_common::GameVersion;
 use scroll::IOread;
 use std::{
 	ffi::CStr,
-	fs::File,
 	io::{self, Read, Seek},
 };
 use tracing::{debug, trace, warn};
 use utils::XorReader;
 
 pub use gust_common as common;
+
+use crate::utils::FencedReader;
 
 mod errors;
 mod utils;
@@ -124,7 +125,7 @@ impl GustPak {
 		});
 
 		let xor_key = &pak_key[..file_key.len()];
-		trace!("Decrypting name with xor key: {:?}", xor_key);
+		// trace!("Decrypting name with xor key: {:?}", xor_key);
 
 		// xor ciphertext with xor_key
 		ciphertext.iter_mut().enumerate().for_each(|(i, b)| {
@@ -381,20 +382,20 @@ impl<'pak> PakEntryRef<'pak> {
 	/// Get a reader for the file's unencrypted data.
 	pub fn get_reader<'file>(
 		&'pak self,
-		file: &'file mut File,
+		file: impl Read + Seek + 'file,
 		pak: &'pak GustPak,
 		game_version: GameVersion,
-	) -> std::io::Result<impl Read + 'file> {
+	) -> std::io::Result<impl Read + Seek + 'file> {
 		let offset = pak.data_start;
-
 		self.get_reader_with_data_start(file, offset, game_version)
 	}
+
 	pub fn get_reader_with_data_start<'file>(
 		&'pak self,
-		file: &'file mut File,
+		mut file: impl Read + Seek + 'file,
 		data_start: u64,
 		game_version: GameVersion,
-	) -> std::io::Result<impl Read + 'file> {
+	) -> std::io::Result<impl Read + Seek + 'file> {
 		// default to null bytes if no pak_key was given
 		let mut pak_key = GustPak::get_pak_key(game_version)
 			.cloned()
@@ -417,7 +418,7 @@ impl<'pak> PakEntryRef<'pak> {
 
 		file.seek(io::SeekFrom::Start(data_start + self.get_data_offset()))?;
 		Ok(XorReader::new(
-			file.take(self.get_file_size() as u64),
+			FencedReader::take(file, self.get_file_size() as u64)?,
 			xor_key,
 		))
 	}

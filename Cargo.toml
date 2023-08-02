@@ -1,2 +1,8 @@
 [workspace]
-members = ["cli", "gust-pak", "gust-common"]
+members = ["cli", "gust-pak", "gust-g1t", "gust-common", "dds-decoder"]
+
+[profile.dev.package."png"]
+opt-level = 2
+
+[profile.dev.package."dds-decoder"]
+opt-level = 2

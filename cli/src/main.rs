@@ -1,3 +1,5 @@
+mod test;
+
 use std::{
 	fs::File,
 	path::{Path, PathBuf},
@@ -6,7 +8,9 @@ use std::{
 
 use anyhow::Context;
 use argh::FromArgs;
+use gust_g1t::GustG1t;
 use gust_pak::GustPak;
+use test::TestSubCommand;
 use tracing::{debug, error, info, trace};
 
 /// Top-level command
@@ -28,6 +32,8 @@ struct CliArgs {
 #[argh(subcommand)]
 enum SubCommand {
 	Pak(PakSubCommand),
+	G1t(G1tSubCommand),
+	Test(TestSubCommand),
 }
 
 /// Extract .pak files
@@ -51,6 +57,19 @@ struct PakSubCommand {
 	pub game: String,
 }
 
+/// Extract .g1t files
+#[derive(FromArgs)]
+#[argh(subcommand, name = "g1t")]
+struct G1tSubCommand {
+	/// the input .g1t file
+	#[argh(positional)]
+	pub input: PathBuf,
+
+	/// the output directory
+	#[argh(positional)]
+	pub output: Option<PathBuf>,
+}
+
 fn main() {
 	let args: CliArgs = argh::from_env();
 
@@ -68,12 +87,14 @@ fn main() {
 	let time_before_command_handling = std::time::Instant::now();
 	let result = match args.subcommand {
 		SubCommand::Pak(args) => handle_pak(args),
+		SubCommand::G1t(args) => handle_g1t(args),
+		SubCommand::Test(args) => args.handle(),
 	};
 	let time_elapsed = time_before_command_handling.elapsed();
 	info!("Time elapsed: {:?}", time_elapsed);
 
 	if let Err(e) = result {
-		error!("Error: {}", e);
+		error!("Error: {:?}", e);
 	}
 }
 
@@ -142,6 +163,56 @@ fn handle_pak(args: PakSubCommand) -> anyhow::Result<()> {
 
 		debug!("Writing file: {:?}", file_path);
 		std::io::copy(&mut reader, &mut file).context("failed to write file")?;
+	}
+
+	Ok(())
+}
+
+fn handle_g1t(args: G1tSubCommand) -> anyhow::Result<()> {
+	debug!("g1t file: {:?}", args.input);
+
+	if !args.input.is_file() {
+		return Err(std::io::Error::new(
+			std::io::ErrorKind::NotFound,
+			"Path is not a file",
+		))?;
+	}
+	let mut file = File::open(&args.input)?;
+
+	debug!("reading g1t file...");
+	let g1t = GustG1t::read(&mut file).context("read g1t file")?;
+	info!("Read g1t file");
+
+	let texture_count = g1t.textures.len();
+	match texture_count {
+		0 => {
+			info!("No textures found");
+			return Ok(());
+		}
+		1 => {
+			let texture = &g1t.textures[0];
+			let image_bytes = g1t.read_image(texture, &mut file).context("read image")?;
+			let image_buffer =
+				image::RgbaImage::from_vec(texture.width, texture.height, image_bytes)
+					.context("image to rgbimage vec")?;
+
+			let output_path = args.output.unwrap_or_else(|| {
+				trace!("no output path specified, using input directory");
+				args.input
+					.parent()
+					.expect("input path has no parent")
+					.join("image.png")
+			});
+
+			debug!("saving image...");
+			image_buffer
+				.save_with_format(output_path, image::ImageFormat::Png)
+				.context("save file")?;
+			info!("Image saved");
+		}
+		_ => {
+			todo!("write multiple textures");
+		}
 	}
 
 	Ok(())
