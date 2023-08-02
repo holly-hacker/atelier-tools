@@ -1,3 +1,5 @@
+mod test;
+
 use std::{
 	fs::File,
 	path::{Path, PathBuf},
@@ -8,6 +10,7 @@ use anyhow::Context;
 use argh::FromArgs;
 use gust_g1t::GustG1t;
 use gust_pak::GustPak;
+use test::TestSubCommand;
 use tracing::{debug, error, info, trace};
 
 /// Top-level command
@@ -30,6 +33,7 @@ struct CliArgs {
 enum SubCommand {
 	Pak(PakSubCommand),
 	G1t(G1tSubCommand),
+	Test(TestSubCommand),
 }
 
 /// Extract .pak files
@@ -84,6 +88,7 @@ fn main() {
 	let result = match args.subcommand {
 		SubCommand::Pak(args) => handle_pak(args),
 		SubCommand::G1t(args) => handle_g1t(args),
+		SubCommand::Test(args) => args.handle(),
 	};
 	let time_elapsed = time_before_command_handling.elapsed();
 	info!("Time elapsed: {:?}", time_elapsed);

@@ -8,20 +8,18 @@ use scroll::IOread;
 use tracing::{debug, trace, warn};
 
 pub struct GustG1t {
-	#[allow(unused)]
-	header: G1tHeader,
-
+	pub header: G1tHeader,
 	pub textures: Vec<TextureInfo>,
 }
 
 /// A single texture in a g1t file.
 pub struct TextureInfo {
-	header: G1tTextureHeader,
+	pub header: G1tTextureHeader,
 	#[allow(unused)]
 	global_flag: GlobalTextureFlags,
 	pub height: u32,
 	pub width: u32,
-	frames: u32,
+	pub frames: u32,
 	absolute_data_offset: u64,
 }
 
@@ -61,10 +59,6 @@ impl GustG1t {
 			))?;
 			let texture_header = G1tTextureHeader::read(&mut reader)?;
 			trace!(?texture_header);
-
-			if texture_header.texture_type != 0x5F {
-				todo!("only texture type 0x5F is supported (BC7)");
-			}
 
 			// header has been read, image data comes now
 			let mut width = texture_header.width();
@@ -153,8 +147,8 @@ impl GustG1t {
 			);
 		}
 
-		match texture.header.texture_type {
-			0x5F => {
+		match texture_type_to_dds_format(texture.header.texture_type) {
+			Some(dds_decoder::DdsFormat::BC7) => {
 				// assuming mipmap level 0
 				let blocks_x = usize::max(1, (texture.width as usize + 3) / 4);
 				let blocks_y = usize::max(1, (texture.height as usize + 3) / 4);
@@ -167,13 +161,18 @@ impl GustG1t {
 				reader.read_exact(&mut data)?;
 				debug!(len = data.len(), "Data read");
 
-				Ok(dds_decoder::read_bc7_image(
+				Ok(dds_decoder::decode_image(
+					dds_decoder::DdsFormat::BC7,
 					&data,
 					texture.width as usize,
 					texture.height as usize,
 				))
 			}
-			_ => todo!("Only BC7 textures are supported for now"),
+			// Some(x) => todo!("DDS format {:?} is not yet supported", x),
+			None => todo!(
+				"texture format 0x{:2X} is not yet supported",
+				texture.header.texture_type
+			),
 		}
 	}
 }
@@ -242,7 +241,7 @@ impl G1tHeader {
 					.map(GlobalTextureFlags::from_bits_retain)
 			})
 			.collect::<Result<Vec<_>, _>>()?;
-		debug!(?global_flags);
+		trace!(?global_flags);
 
 		Ok((
 			Self {
@@ -258,10 +257,10 @@ impl G1tHeader {
 }
 
 #[derive(Debug)]
-struct G1tTextureHeader {
-	z_mipmaps: u8,
-	mipmaps: u8,
-	texture_type: u8,
+pub struct G1tTextureHeader {
+	pub z_mipmaps: u8,
+	pub mipmaps: u8,
+	pub texture_type: u8,
 	/// X size, as a power of 2
 	dx: u8,
 	/// Y size, as a power of 2
@@ -308,6 +307,13 @@ impl G1tTextureHeader {
 	}
 }
 
+fn texture_type_to_dds_format(texture_type: u8) -> Option<dds_decoder::DdsFormat> {
+	match texture_type {
+		0x5F => Some(dds_decoder::DdsFormat::BC7),
+		_ => None,
+	}
+}
+
 bitflags::bitflags! {
 	#[derive(Debug, Copy, Clone)]
 	struct GlobalTextureFlags: u32 {
@@ -327,7 +333,7 @@ bitflags::bitflags! {
 	}
 }
 
-#[derive(Debug, Copy, Clone, strum::FromRepr)]
+#[derive(Debug, Copy, Clone, PartialEq, Eq, strum::FromRepr)]
 pub enum Platform {
 	/// Sony PlayStation 2
 	PlayStation2 = 0x00,
