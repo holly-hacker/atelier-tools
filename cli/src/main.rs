@@ -178,23 +178,37 @@ fn handle_g1t(args: G1tSubCommand) -> anyhow::Result<()> {
 	let g1t = GustG1t::read(&mut file).context("read g1t file")?;
 	info!("Read g1t file");
 
-	let image_bytes = g1t.read_image(&mut file).context("read image")?;
-	let image_buffer = image::RgbaImage::from_vec(g1t.width, g1t.height, image_bytes)
-		.context("image to rgbimage vec")?;
+	let texture_count = g1t.textures.len();
+	match texture_count {
+		0 => {
+			info!("No textures found");
+			return Ok(());
+		}
+		1 => {
+			let texture = &g1t.textures[0];
+			let image_bytes = g1t.read_image(texture, &mut file).context("read image")?;
+			let image_buffer =
+				image::RgbaImage::from_vec(texture.width, texture.height, image_bytes)
+					.context("image to rgbimage vec")?;
 
-	let output_path = args.output.unwrap_or_else(|| {
-		trace!("no output path specified, using input directory");
-		args.input
-			.parent()
-			.expect("input path has no parent")
-			.join("image.png")
-	});
+			let output_path = args.output.unwrap_or_else(|| {
+				trace!("no output path specified, using input directory");
+				args.input
+					.parent()
+					.expect("input path has no parent")
+					.join("image.png")
+			});
 
-	debug!("saving image...");
-	image_buffer
-		.save_with_format(output_path, image::ImageFormat::Png)
-		.context("save file")?;
-	info!("Image saved");
+			debug!("saving image...");
+			image_buffer
+				.save_with_format(output_path, image::ImageFormat::Png)
+				.context("save file")?;
+			info!("Image saved");
+		}
+		_ => {
+			todo!("write multiple textures");
+		}
+	}
 
 	Ok(())
 }

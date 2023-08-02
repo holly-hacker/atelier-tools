@@ -15,11 +15,18 @@ pub struct GustG1t {
 	#[allow(unused)]
 	header: G1tHeader,
 
-	// TODO: this is awful, but I don't want to deal with the complexities of g1t right now
-	texture_type: u8,
+	pub textures: Vec<TextureInfo>,
+}
+
+/// A single texture in a g1t file.
+pub struct TextureInfo {
+	header: G1tTextureHeader,
+	#[allow(unused)]
+	global_flag: GlobalTextureFlags,
 	pub height: u32,
 	pub width: u32,
-	offset: u64,
+	frames: u32,
+	absolute_data_offset: u64,
 }
 
 impl GustG1t {
@@ -45,17 +52,13 @@ impl GustG1t {
 		}
 		trace!(?offsets);
 
-		if offsets.len() > 1 {
-			todo!("support multiple textures");
-		}
-
 		// read textures
-		// this should be a loop instead of an if, but we only support 1 texture for now
-		if let Some((index, offset)) = offsets.into_iter().enumerate().next() {
-			let span = tracing::debug_span!("texture", index, offset);
+		let mut textures = vec![];
+		if let Some((texture_index, offset)) = offsets.into_iter().enumerate().next() {
+			let span = tracing::debug_span!("texture", texture_index, offset);
 			let _guard = span.enter();
 
-			let _global_flag = global_flags[index];
+			let global_flag = global_flags[texture_index];
 
 			reader.seek(std::io::SeekFrom::Start(
 				(header.header_size + offset) as u64,
@@ -93,7 +96,6 @@ impl GustG1t {
 				if extended_data_len >= HEADER_SIZE_FRAMES_DEPTH {
 					let depth: u32 = reader.ioread()?;
 					let texture_flags_2: u32 = reader.ioread()?;
-					// TODO: frames?
 					let frames_from_flags =
 						((texture_flags_2 >> 28) & 0x0F) + ((texture_flags_2 >> 12) & 0xF0);
 					frames = if frames_from_flags == 0 {
@@ -116,36 +118,47 @@ impl GustG1t {
 				}
 			}
 
-			if frames > 1 {
-				panic!("Texture has {} frames, only 1 is supported for now", frames);
-			}
-
 			// need to create some kind of structure data here?
-			return Ok(Self {
-				header,
-				texture_type: texture_header.texture_type,
+			let texture_info = TextureInfo {
+				header: texture_header,
+				global_flag,
 				height,
 				width,
-				offset: reader.stream_position()?,
-			});
+				frames,
+				absolute_data_offset: reader.stream_position()?,
+			};
+			textures.push(texture_info);
 		}
 
-		todo!("handle no textures");
+		Ok(Self { header, textures })
 	}
 
-	pub fn read_image(&self, mut reader: impl Read + Seek) -> Result<Vec<u8>, G1tReadError> {
-		assert_eq!(self.texture_type, 0x5F, "Only BC7 textures are supported");
+	pub fn read_image(
+		&self,
+		texture: &TextureInfo,
+		mut reader: impl Read + Seek,
+	) -> Result<Vec<u8>, G1tReadError> {
+		if texture.header.texture_type != 0x5F {
+			todo!("Only BC7 textures are supported for now");
+		}
+
+		if texture.frames > 1 {
+			todo!(
+				"Texture has {} frames, only 1 is supported for now",
+				texture.frames
+			);
+		}
 
 		// size for BC7
 		// assuming mipmap level 0
-		let blocks_x = usize::max(1, (self.width as usize + 3) / 4);
-		let blocks_y = usize::max(1, (self.height as usize + 3) / 4);
+		let blocks_x = usize::max(1, (texture.width as usize + 3) / 4);
+		let blocks_y = usize::max(1, (texture.height as usize + 3) / 4);
 		let block_count = blocks_x * blocks_y;
 		let encoded_size = block_count * 16;
 		let pixel_count = encoded_size; // BC7 has a compression ratio of exactly 1:4, so this lines up for RGBA8
 		debug!(?encoded_size, "Size of encoded image data");
 
-		reader.seek(std::io::SeekFrom::Start(self.offset))?;
+		reader.seek(std::io::SeekFrom::Start(texture.absolute_data_offset))?;
 
 		let mut data = vec![0u8; encoded_size];
 		reader.read_exact(&mut data)?;
@@ -156,9 +169,10 @@ impl GustG1t {
 		// the size of each chunk is a 4x4 block of rgba8 pixels
 		let mut decoded_pixels = vec![Color4::default(); pixel_count];
 		for (chunk_index, chunk) in data.chunks(16).enumerate() {
-			// let pos = self.offset + (index as u64 * 16);
-			// let span = tracing::debug_span!("chunk", index, pos = format!("0x{pos:x}"));
-			// let _guard = span.enter();
+			let pos = texture.absolute_data_offset + (chunk_index as u64 * 16);
+			let span = tracing::trace_span!("chunk", chunk_index, pos = format!("0x{pos:x}"));
+			let _guard = span.enter();
+
 			let chunk = bc7::decode(chunk);
 
 			// copy the chunk into the decoded pixels
@@ -176,6 +190,7 @@ impl GustG1t {
 		}
 
 		// TODO: this could still be too big if the original image dimensions are not divisible by 4!
+		// we need to allocate a new buffer that has the correct width and height
 		let decoded_pixels = decoded_pixels
 			.into_iter()
 			.flat_map(|color| color.0)
@@ -183,7 +198,6 @@ impl GustG1t {
 
 		debug!("image decoded");
 
-		// todo!("decoding done")
 		Ok(decoded_pixels)
 	}
 }
