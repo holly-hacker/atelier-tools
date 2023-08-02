@@ -16,7 +16,9 @@ pub fn decode_image(
 }
 
 #[derive(Default, Debug, Copy, Clone)]
-pub struct Color4(pub [u8; 4]);
+pub struct Color4 {
+	pub components: [u8; 4],
+}
 
 pub struct DecodedImage {
 	width: usize,

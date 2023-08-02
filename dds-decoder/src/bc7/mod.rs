@@ -38,7 +38,7 @@ pub fn read_image(data: &[u8], width: usize, height: usize) -> Result<Vec<u8>, B
 	// we need to allocate a new buffer that has the correct width and height
 	let decoded_pixels = decoded_pixels
 		.into_iter()
-		.flat_map(|color| color.0)
+		.flat_map(|color| color.components)
 		.collect::<Vec<_>>();
 
 	debug!("image decoded");

@@ -78,7 +78,7 @@ fn decode_mode_1_3_7(data: &[u8], mode: u8) -> ColorBlock {
 	let mut endpoints = [Color4::default(); ENDPOINTS];
 	for c in 0..comps {
 		for e in 0..ENDPOINTS {
-			endpoints[e].0[c] = read_bits32(data, &mut bit_offset, endpoint_bits) as u8;
+			endpoints[e].components[c] = read_bits32(data, &mut bit_offset, endpoint_bits) as u8;
 		}
 	}
 	// tracing::trace!(?endpoints);
@@ -104,11 +104,11 @@ fn decode_mode_1_3_7(data: &[u8], mode: u8) -> ColorBlock {
 
 	for e in 0..ENDPOINTS {
 		for c in 0..4 {
-			endpoints[e].0[c] = if c == comps {
+			endpoints[e].components[c] = if c == comps {
 				255
 			} else {
 				bc7_dequant_with_pbit(
-					endpoints[e].0[c],
+					endpoints[e].components[c],
 					pbits[if shared_pbits { e >> 1 } else { e }],
 					endpoint_bits,
 				)
@@ -120,17 +120,17 @@ fn decode_mode_1_3_7(data: &[u8], mode: u8) -> ColorBlock {
 	for s in 0..2 {
 		for i in 0..weight_vals {
 			for c in 0..comps {
-				block_colors[s][i].0[c] = bc7_interp(
-					endpoints[s * 2].0[c],
-					endpoints[s * 2 + 1].0[c],
+				block_colors[s][i].components[c] = bc7_interp(
+					endpoints[s * 2].components[c],
+					endpoints[s * 2 + 1].components[c],
 					i,
 					weight_bits,
 				);
 			}
-			block_colors[s][i].0[3] = if comps == 3 {
+			block_colors[s][i].components[3] = if comps == 3 {
 				255
 			} else {
-				block_colors[s][i].0[3]
+				block_colors[s][i].components[3]
 			};
 		}
 	}
@@ -181,7 +181,7 @@ fn decode_mode_4_5(data: &[u8], mode: u8) -> ColorBlock {
 				color_endpoint_bits
 			};
 			let color = read_bits32(data, &mut bit_offset, bits) as u8;
-			endpoints[e].0[c] = color;
+			endpoints[e].components[c] = color;
 		}
 	}
 	// tracing::trace!(?endpoints);
@@ -215,8 +215,8 @@ fn decode_mode_4_5(data: &[u8], mode: u8) -> ColorBlock {
 
 	for e in 0..ENDPOINTS {
 		for c in 0..COMPS {
-			endpoints[e].0[c] = bc7_dequant(
-				endpoints[e].0[c],
+			endpoints[e].components[c] = bc7_dequant(
+				endpoints[e].components[c],
 				if c == 3 {
 					alpha_endpoint_bits
 				} else {
@@ -231,12 +231,21 @@ fn decode_mode_4_5(data: &[u8], mode: u8) -> ColorBlock {
 	let mut block_colors = [Color4::default(); 8];
 	for i in 0..1 << weight_bits[0] {
 		for c in 0..3 {
-			block_colors[i].0[c] =
-				bc7_interp(endpoints[0].0[c], endpoints[1].0[c], i, weight_bits[0]);
+			block_colors[i].components[c] = bc7_interp(
+				endpoints[0].components[c],
+				endpoints[1].components[c],
+				i,
+				weight_bits[0],
+			);
 		}
 	}
 	for i in 0..1 << weight_bits[1] {
-		block_colors[i].0[3] = bc7_interp(endpoints[0].0[3], endpoints[1].0[3], i, weight_bits[1]);
+		block_colors[i].components[3] = bc7_interp(
+			endpoints[0].components[3],
+			endpoints[1].components[3],
+			i,
+			weight_bits[1],
+		);
 	}
 	// trace!(?block_colors);
 
@@ -246,10 +255,10 @@ fn decode_mode_4_5(data: &[u8], mode: u8) -> ColorBlock {
 		let y = i >> 2;
 
 		ret[y][x] = block_colors[weights[0][i] as usize];
-		ret[y][x].0[3] = block_colors[weights[1][i] as usize].0[3];
+		ret[y][x].components[3] = block_colors[weights[1][i] as usize].components[3];
 
 		if comp_rot >= 1 {
-			ret[y][x].0.swap(3, comp_rot - 1);
+			ret[y][x].components.swap(3, comp_rot - 1);
 		}
 	}
 
@@ -280,12 +289,14 @@ fn decode_mode_6(data: &[u8]) -> ColorBlock {
 	for i in 0..16 {
 		let w = WEIGHTS4[i] as u64;
 		let iw = 64 - w;
-		vals[i] = Color4([
-			((r0 * iw + r1 * w + 32) >> 6) as u8,
-			((g0 * iw + g1 * w + 32) >> 6) as u8,
-			((b0 * iw + b1 * w + 32) >> 6) as u8,
-			((a0 * iw + a1 * w + 32) >> 6) as u8,
-		]);
+		vals[i] = Color4 {
+			components: [
+				((r0 * iw + r1 * w + 32) >> 6) as u8,
+				((g0 * iw + g1 * w + 32) >> 6) as u8,
+				((b0 * iw + b1 * w + 32) >> 6) as u8,
+				((a0 * iw + a1 * w + 32) >> 6) as u8,
+			],
+		};
 	}
 	// trace!(?vals);
 
