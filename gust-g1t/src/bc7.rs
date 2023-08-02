@@ -254,7 +254,7 @@ fn decode_mode_4_5(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
 		ret[y][x].0[3] = block_colors[weights[1][i] as usize].0[3];
 
 		if comp_rot >= 1 {
-			ret[y].swap(3, comp_rot - 1);
+			ret[y][x].0.swap(3, comp_rot - 1);
 		}
 	}
 
