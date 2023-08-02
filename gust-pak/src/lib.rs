@@ -3,7 +3,6 @@ use gust_common::GameVersion;
 use scroll::IOread;
 use std::{
 	ffi::CStr,
-	fs::File,
 	io::{self, Read, Seek},
 };
 use tracing::{debug, trace, warn};
@@ -381,17 +380,17 @@ impl<'pak> PakEntryRef<'pak> {
 	/// Get a reader for the file's unencrypted data.
 	pub fn get_reader<'file>(
 		&'pak self,
-		file: &'file mut File,
+		file: impl Read + Seek + 'file,
 		pak: &'pak GustPak,
 		game_version: GameVersion,
 	) -> std::io::Result<impl Read + 'file> {
 		let offset = pak.data_start;
-
 		self.get_reader_with_data_start(file, offset, game_version)
 	}
+
 	pub fn get_reader_with_data_start<'file>(
 		&'pak self,
-		file: &'file mut File,
+		mut file: impl Read + Seek + 'file,
 		data_start: u64,
 		game_version: GameVersion,
 	) -> std::io::Result<impl Read + 'file> {
