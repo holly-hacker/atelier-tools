@@ -123,7 +123,7 @@ impl GustPak {
 		});
 
 		let xor_key = &pak_key[..file_key.len()];
-		trace!("Decrypting name with xor key: {:?}", xor_key);
+		// trace!("Decrypting name with xor key: {:?}", xor_key);
 
 		// xor ciphertext with xor_key
 		ciphertext.iter_mut().enumerate().for_each(|(i, b)| {
