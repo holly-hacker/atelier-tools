@@ -1,9 +1,13 @@
 use thiserror::Error;
 
+use crate::DdsFormat;
+
 #[derive(Error, Debug)]
 pub enum DdsDecodeError {
 	#[error("BC7 error: {0:?}")]
 	Bc7Error(#[from] Bc7Error),
+	#[error("Unsupported format: {0:?}")]
+	UnsupportedFormat(DdsFormat),
 }
 
 #[derive(Error, Debug)]

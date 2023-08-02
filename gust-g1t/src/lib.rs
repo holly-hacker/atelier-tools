@@ -171,7 +171,9 @@ impl GustG1t {
 					texture.height as usize,
 				)?)
 			}
-			// Some(x) => todo!("DDS format {:?} is not yet supported", x),
+			Some(x) => Err(G1tReadError::Unimplemented(
+				format!("DDS format {:?} is not yet supported", x).into(),
+			)),
 			None => Err(G1tReadError::Unimplemented(
 				format!(
 					"texture format 0x{:02X} is not yet supported",
@@ -315,6 +317,10 @@ impl G1tTextureHeader {
 
 fn texture_type_to_dds_format(texture_type: u8) -> Option<dds_decoder::DdsFormat> {
 	match texture_type {
+		0x01 | 0x02 => Some(dds_decoder::DdsFormat::RGBA8),
+		0x59 => Some(dds_decoder::DdsFormat::BC1),
+		0x5B => Some(dds_decoder::DdsFormat::BC3),
+		0x5E => Some(dds_decoder::DdsFormat::BC6H),
 		0x5F => Some(dds_decoder::DdsFormat::BC7),
 		_ => None,
 	}

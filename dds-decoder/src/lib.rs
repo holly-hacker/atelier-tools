@@ -11,6 +11,7 @@ pub fn decode_image(
 ) -> Result<Vec<u8>, DdsDecodeError> {
 	match format {
 		DdsFormat::BC7 => Ok(bc7::read_image(data, width, height)?),
+		_ => Err(DdsDecodeError::UnsupportedFormat(format)),
 	}
 }
 
@@ -35,5 +36,18 @@ impl DecodedImage {
 
 #[derive(Debug, Copy, Clone)]
 pub enum DdsFormat {
+	/// Uncompressed RGBA8
+	RGBA8,
+	/// BC1/DXT1: Three-channel color with alpha channel.
+	///
+	/// Uses DDS magic "DXT1"
+	BC1,
+	/// BC3/DXT5: Three-channel color with alpha channel.
+	///
+	/// Uses DDS magic "DXT5"
+	BC3,
+	/// BC6H: Three-channel high dynamic range (HDR) color.
+	BC6H,
+	/// BC7: Three-channel color, alpha channel optional.
 	BC7,
 }
