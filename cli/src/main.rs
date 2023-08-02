@@ -174,11 +174,12 @@ fn handle_g1t(args: G1tSubCommand) -> anyhow::Result<()> {
 	}
 	let mut file = File::open(&args.input)?;
 
-	let _g1t = GustG1t::read(&mut file).context("read g1t file")?;
+	debug!("reading g1t file...");
+	let g1t = GustG1t::read(&mut file).context("read g1t file")?;
 	info!("Read g1t file");
 
-	let image_bytes = _g1t.read_image(&mut file).context("read image")?;
-	let image_buffer = image::RgbaImage::from_vec(_g1t.width, _g1t.height, image_bytes)
+	let image_bytes = g1t.read_image(&mut file).context("read image")?;
+	let image_buffer = image::RgbaImage::from_vec(g1t.width, g1t.height, image_bytes)
 		.context("image to rgbimage vec")?;
 
 	let output_path = args.output.unwrap_or_else(|| {
@@ -188,9 +189,12 @@ fn handle_g1t(args: G1tSubCommand) -> anyhow::Result<()> {
 			.expect("input path has no parent")
 			.join("image.png")
 	});
+
+	debug!("saving image...");
 	image_buffer
 		.save_with_format(output_path, image::ImageFormat::Png)
 		.context("save file")?;
+	info!("Image saved");
 
 	Ok(())
 }

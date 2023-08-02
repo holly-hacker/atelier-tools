@@ -134,6 +134,8 @@ impl GustG1t {
 	}
 
 	pub fn read_image(&self, mut reader: impl Read + Seek) -> Result<Vec<u8>, G1tReadError> {
+		assert_eq!(self.texture_type, 0x5F, "Only BC7 textures are supported");
+
 		// size for BC7
 		// assuming mipmap level 0
 		let blocks_x = usize::max(1, (self.width as usize + 3) / 4);
@@ -163,6 +165,8 @@ impl GustG1t {
 			let chunk_x = (chunk_index % blocks_x) * 4;
 			let chunk_y = (chunk_index / blocks_x) * 4;
 			let target_index = chunk_y * (blocks_x * 4) + chunk_x;
+
+			#[allow(clippy::needless_range_loop)]
 			for y in 0..4 {
 				for x in 0..4 {
 					let target_index = target_index + y * (blocks_x * 4) + x;
@@ -241,7 +245,6 @@ impl G1tHeader {
 			return Err(G1tReadError::InvalidExtraSize(extra_size));
 		}
 
-		// TODO: global flags should be saved
 		let global_flags = (0..texture_count)
 			.map(|_| {
 				reader

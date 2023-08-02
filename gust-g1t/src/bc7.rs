@@ -1,7 +1,12 @@
+#![allow(clippy::needless_range_loop)]
+
 // based on bc7enc: https://github.com/richgel999/bc7enc/blob/f66c2e489b07138f2673a2fb3d27c1aa1d565c48/bc7decomp.cpp
 // bc7enc is released in the public domain
 
 // TODO: implement correct error handling for this module
+// TODO: consider using const generics to make the `mode` parameter generic. may help with speed.
+
+type ColorBlock = [[Color4; 4]; 4];
 
 #[rustfmt::skip]
 const PARTITION2: [u8; 64 * 16] =
@@ -32,30 +37,23 @@ const WEIGHTS2: [u8; 4] = [0, 21, 43, 64];
 const WEIGHTS3: [u8; 8] = [0, 9, 18, 27, 37, 46, 55, 64];
 const WEIGHTS4: [u8; 16] = [0, 4, 9, 13, 17, 21, 26, 30, 34, 38, 43, 47, 51, 55, 60, 64];
 
-pub fn decode(data: &[u8]) -> [[Color4; 4]; 4] {
+pub fn decode(data: &[u8]) -> ColorBlock {
 	let mode = data[0].trailing_zeros() as usize;
 	// trace!(mode, "Decoding BC7");
 
 	match mode {
 		0 | 2 => todo!("mode 0/2"),
-		// 0 | 2 => decode_dummy(),
 		1 | 3 | 7 => decode_mode_1_3_7(data, mode),
-		// 1 | 3 | 7 => decode_dummy(),
 		4 | 5 => decode_mode_4_5(data, mode),
 		6 => decode_mode_6(data),
 		_ => panic!("unknown mode: {}", mode),
 	}
 }
 
-#[allow(unused)]
-fn decode_dummy() -> [[Color4; 4]; 4] {
-	[[Color4::default(); 4]; 4]
-}
-
 #[derive(Default, Debug, Copy, Clone)]
 pub struct Color4(pub [u8; 4]);
 
-fn decode_mode_1_3_7(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
+fn decode_mode_1_3_7(data: &[u8], mode: usize) -> ColorBlock {
 	const ENDPOINTS: usize = 4;
 	let comps: usize = if mode == 7 { 4 } else { 3 };
 	let weight_bits: usize = if mode == 1 { 3 } else { 2 };
@@ -71,7 +69,7 @@ fn decode_mode_1_3_7(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
 	let mut bit_offset = 0;
 
 	let read_mode = read_bits32(data, &mut bit_offset, mode + 1).trailing_zeros() as usize;
-	assert_eq!(read_mode, mode);
+	debug_assert_eq!(read_mode, mode);
 
 	let part = read_bits32(data, &mut bit_offset, 6) as usize;
 
@@ -100,7 +98,7 @@ fn decode_mode_1_3_7(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
 	}
 	// tracing::trace!(?weights);
 
-	assert_eq!(bit_offset, 128);
+	debug_assert_eq!(bit_offset, 128);
 
 	for e in 0..ENDPOINTS {
 		for c in 0..4 {
@@ -121,7 +119,7 @@ fn decode_mode_1_3_7(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
 		for i in 0..weight_vals {
 			for c in 0..comps {
 				block_colors[s][i].0[c] = bc7_interp(
-					endpoints[s * 2 + 0].0[c],
+					endpoints[s * 2].0[c],
 					endpoints[s * 2 + 1].0[c],
 					i,
 					weight_bits,
@@ -147,22 +145,23 @@ fn decode_mode_1_3_7(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
 	ret
 }
 
-fn decode_mode_4_5(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
+fn decode_mode_4_5(data: &[u8], mode: usize) -> ColorBlock {
 	debug_assert!(mode == 4 || mode == 5);
 
 	const ENDPOINTS: usize = 2;
 	const COMPS: usize = 4;
-	const WEIGHT_BITS: usize = 2;
-	let a_weight_bits: usize = if mode == 4 { 3 } else { 2 };
-	let endpoint_bits: usize = if mode == 4 { 5 } else { 7 };
-	let a_endpoint_bits: usize = if mode == 4 { 6 } else { 8 };
+	let color_endpoint_bits: usize = if mode == 4 { 5 } else { 7 }; // ColorComponentPrecision
+	let alpha_endpoint_bits: usize = if mode == 4 { 6 } else { 8 }; // AlphaComponentPrecision
 
 	let mut bit_offset = 0;
 
 	let read_mode = read_bits32(data, &mut bit_offset, mode + 1).trailing_zeros() as usize;
-	assert_eq!(read_mode, mode);
+	debug_assert_eq!(read_mode, mode);
 
 	let comp_rot = read_bits32(data, &mut bit_offset, 2) as usize;
+
+	// if index_mode is 1, color will use 3 bits and alpha will use 2 bits instead of the other way around
+	// mode 5 always uses 2 bits for both color and alpha
 	let index_mode = if mode == 4 {
 		read_bits32(data, &mut bit_offset, 1) as usize
 	} else {
@@ -175,29 +174,23 @@ fn decode_mode_4_5(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
 	for c in 0..COMPS {
 		for e in 0..ENDPOINTS {
 			let bits = if c == 3 {
-				a_endpoint_bits
+				alpha_endpoint_bits
 			} else {
-				endpoint_bits
+				color_endpoint_bits
 			};
 			let color = read_bits32(data, &mut bit_offset, bits) as u8;
 			endpoints[e].0[c] = color;
 		}
 	}
-	// trace!(?endpoints);
+	// tracing::trace!(?endpoints);
 
+	// ColorIndexBitCount and AlphaIndexBitCount
 	let weight_bits = [
-		if index_mode == 1 {
-			a_weight_bits
-		} else {
-			WEIGHT_BITS
-		},
-		if index_mode == 1 {
-			WEIGHT_BITS
-		} else {
-			a_weight_bits
-		},
+		if index_mode == 1 && mode == 4 { 3 } else { 2 },
+		if index_mode == 0 && mode == 4 { 3 } else { 2 },
 	];
 
+	// weights and a_weights
 	let mut weights = [[0u8; 16]; 2];
 
 	for i in 0..16 {
@@ -223,14 +216,14 @@ fn decode_mode_4_5(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
 			endpoints[e].0[c] = bc7_dequant(
 				endpoints[e].0[c],
 				if c == 3 {
-					a_endpoint_bits
+					alpha_endpoint_bits
 				} else {
-					endpoint_bits
+					color_endpoint_bits
 				},
 			);
 		}
 	}
-	// trace!(?endpoints);
+	// tracing::trace!(?endpoints);
 
 	// block colors
 	let mut block_colors = [Color4::default(); 8];
@@ -247,7 +240,7 @@ fn decode_mode_4_5(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
 
 	let mut ret = [[Color4::default(); 4]; 4];
 	for i in 0..16 {
-		let x = i & 3;
+		let x = i & 0b11;
 		let y = i >> 2;
 
 		ret[y][x] = block_colors[weights[0][i] as usize];
@@ -261,7 +254,7 @@ fn decode_mode_4_5(data: &[u8], mode: usize) -> [[Color4; 4]; 4] {
 	ret
 }
 
-fn decode_mode_6(data: &[u8]) -> [[Color4; 4]; 4] {
+fn decode_mode_6(data: &[u8]) -> ColorBlock {
 	let data_lo = u64::from_le_bytes(data[0..8].try_into().expect("data is not 16 bytes"));
 	let data_hi = u64::from_le_bytes(data[8..16].try_into().expect("data is not 16 bytes"));
 
@@ -269,7 +262,7 @@ fn decode_mode_6(data: &[u8]) -> [[Color4; 4]; 4] {
 	let get_bits_hi = |bit_idx: usize, bit_len: usize| data_hi >> bit_idx & ((1 << bit_len) - 1);
 
 	let mode = get_bits_lo(0, 7);
-	assert_eq!(mode, 1 << 6);
+	debug_assert_eq!(mode, 1 << 6);
 
 	let r0 = (get_bits_lo(7, 7) << 1) | get_bits_lo(63, 1);
 	let g0 = (get_bits_lo(7 * 3, 7) << 1) | get_bits_lo(63, 1);
@@ -316,7 +309,7 @@ fn decode_mode_6(data: &[u8]) -> [[Color4; 4]; 4] {
 }
 
 fn read_bits32(data: &[u8], bit_offset: &mut usize, codesize: usize) -> u32 {
-	assert!(codesize <= 32);
+	debug_assert!(codesize <= 32);
 	let mut bits = 0;
 	let mut total_bits = 0;
 
@@ -324,7 +317,7 @@ fn read_bits32(data: &[u8], bit_offset: &mut usize, codesize: usize) -> u32 {
 		let byte_bit_offset = *bit_offset & 7;
 		let bits_to_read = std::cmp::min(codesize - total_bits, 8 - byte_bit_offset);
 
-		let byte_bits = (data[*bit_offset as usize >> 3] >> byte_bit_offset) as u32;
+		let byte_bits = (data[*bit_offset >> 3] >> byte_bit_offset) as u32;
 		let mask = (1 << bits_to_read) - 1;
 		let byte_bits = byte_bits & mask;
 
@@ -340,12 +333,12 @@ fn read_bits32(data: &[u8], bit_offset: &mut usize, codesize: usize) -> u32 {
 fn bc7_dequant(val: u8, val_bits: usize) -> u8 {
 	let val = val as usize;
 
-	assert!(val < (1 << val_bits));
-	assert!((4..=8).contains(&val_bits));
+	debug_assert!(val < (1 << val_bits));
+	debug_assert!((4..=8).contains(&val_bits));
 
 	let mut val = val << (8 - val_bits);
 	val |= val >> val_bits;
-	assert!(val <= 255);
+	debug_assert!(val <= 255);
 
 	val as u8
 }
@@ -353,35 +346,35 @@ fn bc7_dequant(val: u8, val_bits: usize) -> u8 {
 fn bc7_dequant_with_pbit(val: u8, pbit: usize, val_bits: usize) -> u8 {
 	let val = val as usize;
 
-	assert!(val < (1 << val_bits));
-	assert!(pbit < 2);
-	assert!(val_bits >= 4 && val_bits <= 8);
+	debug_assert!(val < (1 << val_bits));
+	debug_assert!((4..=8).contains(&val_bits));
+	debug_assert!(pbit < 2);
 
 	let total_bits = val_bits + 1;
 	let mut val = (val << 1) | pbit;
 	val <<= 8 - total_bits;
 	val |= val >> total_bits;
-	assert!(val <= 255);
+	debug_assert!(val <= 255);
 
 	val as u8
 }
 
 fn bc7_interp2(l: u8, h: u8, w: usize) -> u8 {
-	assert!(w < 4);
+	debug_assert!(w < 4);
 	let l = l as usize;
 	let h = h as usize;
 	((l * (64 - WEIGHTS2[w]) as usize + h * WEIGHTS2[w] as usize + 32) >> 6) as u8
 }
 
 fn bc7_interp3(l: u8, h: u8, w: usize) -> u8 {
-	assert!(w < 8);
+	debug_assert!(w < 8);
 	let l = l as usize;
 	let h = h as usize;
 	((l * (64 - WEIGHTS3[w]) as usize + h * WEIGHTS3[w] as usize + 32) >> 6) as u8
 }
 
 fn bc7_interp4(l: u8, h: u8, w: usize) -> u8 {
-	assert!(w < 16);
+	debug_assert!(w < 16);
 	let l = l as usize;
 	let h = h as usize;
 	((l * (64 - WEIGHTS4[w]) as usize + h * WEIGHTS4[w] as usize + 32) >> 6) as u8
@@ -392,6 +385,6 @@ fn bc7_interp(l: u8, h: u8, w: usize, bits: usize) -> u8 {
 		2 => bc7_interp2(l, h, w),
 		3 => bc7_interp3(l, h, w),
 		4 => bc7_interp4(l, h, w),
-		_ => 0,
+		_ => panic!("bad bits value in bc_interp"),
 	}
 }
