@@ -10,6 +10,8 @@ use utils::XorReader;
 
 pub use gust_common as common;
 
+use crate::utils::FencedReader;
+
 mod errors;
 mod utils;
 
@@ -416,7 +418,7 @@ impl<'pak> PakEntryRef<'pak> {
 
 		file.seek(io::SeekFrom::Start(data_start + self.get_data_offset()))?;
 		Ok(XorReader::new(
-			file.take(self.get_file_size() as u64),
+			FencedReader::take(file, self.get_file_size() as u64)?,
 			xor_key,
 		))
 	}
