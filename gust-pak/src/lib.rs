@@ -385,7 +385,7 @@ impl<'pak> PakEntryRef<'pak> {
 		file: impl Read + Seek + 'file,
 		pak: &'pak GustPak,
 		game_version: GameVersion,
-	) -> std::io::Result<impl Read + 'file> {
+	) -> std::io::Result<impl Read + Seek + 'file> {
 		let offset = pak.data_start;
 		self.get_reader_with_data_start(file, offset, game_version)
 	}
@@ -395,7 +395,7 @@ impl<'pak> PakEntryRef<'pak> {
 		mut file: impl Read + Seek + 'file,
 		data_start: u64,
 		game_version: GameVersion,
-	) -> std::io::Result<impl Read + 'file> {
+	) -> std::io::Result<impl Read + Seek + 'file> {
 		// default to null bytes if no pak_key was given
 		let mut pak_key = GustPak::get_pak_key(game_version)
 			.cloned()
