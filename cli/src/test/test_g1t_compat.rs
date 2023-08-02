@@ -16,6 +16,10 @@ pub struct TestG1tCompatibility {
 	/// the game version to use, eg. `A24` for Atelier Ryza 3
 	#[argh(option, short = 'g')]
 	pub game: String,
+
+	/// test g1t compatibility by decoding the textures, rather than running static checks
+	#[argh(switch, short = 'd', long = "decode")]
+	pub decode: bool,
 }
 
 impl TestG1tCompatibility {
@@ -32,8 +36,13 @@ impl TestG1tCompatibility {
 			return Ok(());
 		}
 
+		if self.decode {
+			info!("Trying to decode all textures, this may take a few minutes");
+		}
+
 		// TODO: this can happen in parallel
-		let mut unsupported_textures_in_paks = vec![];
+		let mut total_textures = 0;
+		let mut total_unsupported_textures = 0;
 		for item in std::fs::read_dir(&data_dir)? {
 			let item = item?;
 			if !item.file_type()?.is_file() {
@@ -44,7 +53,7 @@ impl TestG1tCompatibility {
 			let file = std::fs::File::open(item.path()).context("open file")?;
 			let index = GustPak::read_index(&file, game_version).context("read index")?;
 
-			let mut unsupported_textures = vec![];
+			let mut unsupported_textures: Vec<(String, Cow<'static, str>)> = vec![];
 			let mut total_texture_count = 0;
 			for entry in index.entries.iter() {
 				let file_name = entry.get_file_name();
@@ -61,38 +70,41 @@ impl TestG1tCompatibility {
 				let g1t = GustG1t::read(reader)
 					.with_context(|| format!("read g1t file `{file_name}`"))?;
 
-				for texture in g1t.textures {
+				for texture in &g1t.textures {
 					total_texture_count += 1;
-					if let Err(e) = Self::check_texture_compatible(&g1t.header, &texture) {
-						unsupported_textures.push((file_name.to_owned(), e));
+
+					match self.decode {
+						true => {
+							let reader = entry.get_reader(&file, &index, game_version)?;
+							if let Err(e) = g1t.read_image(texture, reader) {
+								unsupported_textures
+									.push((file_name.to_owned(), e.to_string().into()));
+							}
+						}
+						false => {
+							if let Err(e) = Self::check_texture_compatible(&g1t.header, texture) {
+								unsupported_textures.push((file_name.to_owned(), e));
+							}
+						}
 					}
 				}
 			}
-			unsupported_textures_in_paks.push((
-				item.file_name(),
-				total_texture_count,
-				unsupported_textures,
-			));
-		}
 
-		let mut total_textures = 0;
-		let mut total_unsupported_textures = 0;
-		for (file_name, total_count, unsupported) in unsupported_textures_in_paks {
-			if unsupported.is_empty() {
+			if unsupported_textures.is_empty() {
 				info!(
 					"{}: {} textures, all supported",
-					file_name.to_string_lossy(),
-					total_count
+					item.path().to_string_lossy(),
+					total_texture_count
 				);
 			} else {
 				info!(
 					"{}: {} textures, {} unsupported",
-					file_name.to_string_lossy(),
-					total_count,
-					unsupported.len()
+					item.path().to_string_lossy(),
+					total_texture_count,
+					unsupported_textures.len()
 				);
-				total_textures += total_count;
-				for (texture_name, reason) in unsupported {
+				total_textures += total_texture_count;
+				for (texture_name, reason) in unsupported_textures {
 					info!("  {}: {}", texture_name, reason);
 					total_unsupported_textures += 1;
 				}

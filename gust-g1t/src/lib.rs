@@ -128,23 +128,26 @@ impl GustG1t {
 		texture: &TextureInfo,
 		mut reader: impl Read + Seek,
 	) -> Result<Vec<u8>, G1tReadError> {
-		if texture.header.texture_type != 0x5F {
-			todo!("Only BC7 textures are supported for now");
-		}
-
 		if texture.header.mipmaps > 1 {
-			todo!("Mipmaps are not supported for now");
+			return Err(G1tReadError::Unimplemented(
+				"Mipmaps are not supported for now".into(),
+			));
 		}
 
 		if texture.header.z_mipmaps > 1 {
-			todo!("Z-mipmaps are not supported for now");
+			return Err(G1tReadError::Unimplemented(
+				"Z-mipmaps are not supported for now".into(),
+			));
 		}
 
 		if texture.frames > 1 {
-			todo!(
-				"Texture has {} frames, only 1 is supported for now",
-				texture.frames
-			);
+			return Err(G1tReadError::Unimplemented(
+				format!(
+					"Texture has {} frames, only 1 is supported for now",
+					texture.frames
+				)
+				.into(),
+			));
 		}
 
 		match texture_type_to_dds_format(texture.header.texture_type) {
@@ -169,10 +172,13 @@ impl GustG1t {
 				)?)
 			}
 			// Some(x) => todo!("DDS format {:?} is not yet supported", x),
-			None => todo!(
-				"texture format 0x{:2X} is not yet supported",
-				texture.header.texture_type
-			),
+			None => Err(G1tReadError::Unimplemented(
+				format!(
+					"texture format 0x{:2X} is not yet supported",
+					texture.header.texture_type
+				)
+				.into(),
+			)),
 		}
 	}
 }

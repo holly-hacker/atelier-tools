@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -27,4 +29,7 @@ pub enum G1tReadError {
 	InvalidExtendedDataSize(u32),
 	#[error("Texture has no mipmaps")]
 	NoMipmaps,
+
+	#[error("Unimplemented feature: {0}")]
+	Unimplemented(Cow<'static, str>),
 }
