@@ -6,9 +6,7 @@
 // TODO: implement correct error handling for this module
 // TODO: consider using const generics to make the `mode` parameter generic. may help with speed.
 
-use crate::{errors::Bc7Error, Color4};
-
-type ColorBlock = [[Color4; 4]; 4];
+use crate::{errors::Bc7Error, Color4, ColorBlock};
 
 #[rustfmt::skip]
 const PARTITION2: [u8; 64 * 16] =

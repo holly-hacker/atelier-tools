@@ -133,7 +133,7 @@ impl TestG1tCompatibility {
 		if texture.header.z_mipmaps > 1 {
 			return Err("more than 1 z-mipmap".into());
 		}
-		if !matches!(texture.header.texture_type, 0x5F) {
+		if !matches!(texture.header.texture_type, 0x59 | 0x5F) {
 			return Err(format!(
 				"Unsupported texture type: 0x{:02X}",
 				texture.header.texture_type

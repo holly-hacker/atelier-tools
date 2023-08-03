@@ -1,5 +1,6 @@
 use errors::DdsDecodeError;
 
+mod bc1;
 mod bc7;
 pub mod errors;
 
@@ -10,14 +11,23 @@ pub fn decode_image(
 	height: usize,
 ) -> Result<Vec<u8>, DdsDecodeError> {
 	match format {
+		DdsFormat::BC1 => Ok(bc1::read_image(data, width, height)),
 		DdsFormat::BC7 => Ok(bc7::read_image(data, width, height)?),
 		_ => Err(DdsDecodeError::UnsupportedFormat(format)),
 	}
 }
 
+type ColorBlock = [[Color4; 4]; 4];
+
 #[derive(Default, Debug, Copy, Clone)]
 pub struct Color4 {
 	pub components: [u8; 4],
+}
+
+impl Color4 {
+	pub const TRANSPARENT: Self = Self {
+		components: [0, 0, 0, 0],
+	};
 }
 
 pub struct DecodedImage {

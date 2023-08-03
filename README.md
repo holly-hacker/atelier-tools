@@ -12,7 +12,7 @@ Functionality will likely be limited to the Atelier Ryza games, as those are the
   - [x] Atelier Ryza 3
 - `.g1t` parsing and decoding:
   - [ ] RGBA8 (0x01, 0x02)
-  - [ ] DXT1 (0x59)
+  - [x] DXT1 (0x59)
   - [ ] DXT5 (0x5B)
   - [ ] BC6H (0x5E)
   - [x] BC7 (missing mode 2 support which is unused in tested games)
