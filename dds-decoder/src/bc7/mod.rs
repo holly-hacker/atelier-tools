@@ -33,14 +33,26 @@ pub fn read_image(data: &[u8], width: usize, height: usize) -> Result<Vec<u8>, B
 		}
 	}
 
-	// TODO: this could still be too big if the original image dimensions are not divisible by 4!
-	// we need to allocate a new buffer that has the correct width and height
 	let decoded_pixels = decoded_pixels
 		.into_iter()
 		.flat_map(|color| color.components)
 		.collect::<Vec<_>>();
 
+	// the decoded pixels may contain some "padding" on each row, since the width and height may not
+	// be divisible by the decoded block size
+	let mut final_pixels = vec![0u8; width * height * 4];
+	let decoded_pixels_line_bytes = blocks_x * 4 * 4;
+	decoded_pixels
+		.chunks_exact(decoded_pixels_line_bytes)
+		.take(height)
+		.enumerate()
+		.for_each(|(row, line)| {
+			let line_offset = width * row * 4;
+			final_pixels[line_offset..(line_offset + width * 4)]
+				.copy_from_slice(&line[0..width * 4]);
+		});
+
 	debug!("image decoded");
 
-	Ok(decoded_pixels)
+	Ok(final_pixels)
 }
