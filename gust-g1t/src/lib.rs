@@ -134,7 +134,7 @@ impl GustG1t {
 			));
 		}
 
-		if texture.header.z_mipmaps > 1 {
+		if texture.header.z_mipmaps > 0 {
 			return Err(G1tReadError::Unimplemented(
 				"Z-mipmaps are not supported for now".into(),
 			));

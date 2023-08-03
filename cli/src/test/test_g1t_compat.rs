@@ -130,8 +130,8 @@ impl TestG1tCompatibility {
 		if texture.header.mipmaps > 1 {
 			return Err("more than 1 mipmap".into());
 		}
-		if texture.header.z_mipmaps > 1 {
-			return Err("more than 1 z-mipmap".into());
+		if texture.header.z_mipmaps > 0 {
+			return Err("z-mipmaps".into());
 		}
 		if !matches!(texture.header.texture_type, 0x59 | 0x5F) {
 			return Err(format!(
