@@ -129,15 +129,20 @@ impl GustG1t {
 		mut reader: impl Read + Seek,
 	) -> Result<Vec<u8>, G1tReadError> {
 		if texture.header.mipmaps > 1 {
-			return Err(G1tReadError::Unimplemented(
-				"Mipmaps are not supported for now".into(),
-			));
+			// we can safely ignore mipmaps because the fill size image always comes first
+			// TODO: allow reading mipmaps
+			tracing::debug!(
+				"Detected {} mipmaps, they are ignored",
+				texture.header.mipmaps
+			);
 		}
 
 		if texture.header.z_mipmaps > 0 {
-			return Err(G1tReadError::Unimplemented(
-				"Z-mipmaps are not supported for now".into(),
-			));
+			// TODO: allow reading z-mipmaps
+			tracing::debug!(
+				"Detected {} z-mipmaps, they are ignored",
+				texture.header.z_mipmaps
+			);
 		}
 
 		if texture.frames > 1 {
