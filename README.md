@@ -29,9 +29,19 @@ Tested games:
 
 ## Goals
 
-- Be easier to understand and use than gust_tools
+- Be easier to understand and use than [gust_tools](https://github.com/VitaSmith/gust_tools)
 - Support unpacking enough file types to create a decent auto-generated wiki
+
+## Anti-goals
+
+- Be a complete replacement for [gust_tools](https://github.com/VitaSmith/gust_tools): This project
+  is (currently) not focused on encoding external assets to be used in the game, it only tries to
+  read these assets or convert them to useable formats.
+- Support every single format and every single game: This project was born to support
+  [atelier-wiki](https://github.com/holly-hacker/atelier-wiki) (as to not need any C dependencies)
+  and because I thought it was a fun project. As such, I won't try to support every Atelier game
+  ever made and I'm unlikely to accept pull requests for games I don't personally own.
 
 ## Acknowledgements
 
-- [gust_tools](https://github.com/VitaSmith/gust_tools) by [VitaSmith](https://github.com/VitaSmith), which was used to figure out algorithms and file formats.
+- [gust_tools](https://github.com/VitaSmith/gust_tools) by [VitaSmith](https://github.com/VitaSmith), which was used to help figure out various algorithms and file formats.
