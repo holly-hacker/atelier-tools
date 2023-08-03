@@ -112,8 +112,10 @@ impl TestG1tCompatibility {
 		}
 
 		info!(
-			"{}/{} textures unsupported",
-			total_unsupported_textures, total_textures,
+			"{}/{} ({:.1}%) textures supported",
+			(total_textures - total_unsupported_textures),
+			total_textures,
+			(total_textures - total_unsupported_textures) as f64 / (total_textures as f64) * 100.,
 		);
 
 		Ok(())
