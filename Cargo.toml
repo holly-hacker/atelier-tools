@@ -1,5 +1,6 @@
 [workspace]
 members = ["cli", "gust-pak", "gust-g1t", "gust-common", "dds-decoder"]
+resolver = "2"
 
 [profile.dev.package."png"]
 opt-level = 2
