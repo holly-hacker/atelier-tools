@@ -2,14 +2,18 @@
 
 Tools and libraries for Atelier games by Gust.
 
-Functionality will likely be limited to the Atelier Ryza games, as those are the only ones I own.
+Functionality will likely be limited to modern Atelier games that I own.
 
 ## Functionality
 
 - `.pak` decoding:
+  - [ ] Atelier Sophie
+  - [ ] Atelier Firis
+  - [ ] Atelier Lydie & Suelle
   - [ ] Atelier Ryza
   - [ ] Atelier Ryza 2
   - [x] Atelier Ryza 3
+  - [ ] Atelier Sophie 2
 - `.g1t` parsing and decoding:
   - Platforms:
     - [x] Windows
