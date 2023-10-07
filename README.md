@@ -30,8 +30,13 @@ Functionality will likely be limited to modern Atelier games that I own.
     - [x] BC7 (missing mode 2 support which is unused in tested games)
     - [ ] Other types that are unused in tested games
 
-Texture support:
+g1t texture support:
 
+- Atelier Sophie: 463/1725 (26.8%) textures supported
+- Atelier Firis: 1459/2648 (55.1%) textures supported
+- Atelier Lydie & Suelle: 1447/5178 (27.9%) textures supported
+- Atelier Ryza: 481/2197 (21.9%) textures supported
+- Atelier Ryza 2: 620/2949 (21.0%) textures supported
 - Atelier Ryza 3: 5740/5964 (96.2%) textures supported
 
 ## Goals

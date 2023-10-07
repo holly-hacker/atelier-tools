@@ -1,4 +1,4 @@
-use std::{borrow::Cow, str::FromStr};
+use std::{borrow::Cow, ffi::OsStr, str::FromStr};
 
 use anyhow::Context;
 use argh::FromArgs;
@@ -30,11 +30,22 @@ impl TestG1tCompatibility {
 		};
 		info!("Using encryption keys for {}", game_version.get_name());
 
-		let data_dir = self.input.join("Data");
-		if !data_dir.exists() {
-			error!("Data directory does not exist: {:?}", data_dir);
+		if !self.input.exists() {
+			error!("input directory does not exist: {:?}", self.input);
 			return Ok(());
 		}
+
+		// check if there are .PAK files in this folder (like in A17), otherwise use /Data
+		let data_dir = if std::fs::read_dir(&self.input)?
+			.flatten()
+			.any(|f| f.path().extension() == Some(OsStr::new("PAK")))
+		{
+			info!("Found .PAK files in input directory");
+			self.input.clone()
+		} else {
+			info!("No .PAK files found in input directory, reading from /Data");
+			self.input.join("Data")
+		};
 
 		if self.decode {
 			info!("Trying to decode all textures, this may take a few minutes");
@@ -50,6 +61,12 @@ impl TestG1tCompatibility {
 				continue;
 			}
 
+			if item.path().extension() != Some(OsStr::new("PAK")) {
+				debug!("Skipping {:?} because it's not a .PAK file", item.path());
+				continue;
+			}
+
+			debug!("Reading {:?}", item.path());
 			let file = std::fs::File::open(item.path()).context("open file")?;
 			let index = GustPak::read_index(&file, game_version).context("read index")?;
 
