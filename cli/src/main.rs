@@ -108,7 +108,7 @@ fn handle_pak(args: PakSubCommand) -> anyhow::Result<()> {
 	debug!("Pak file: {:?}", args.input);
 
 	if !args.input.is_file() {
-		return Err(std::io::Error::new(
+		Err(std::io::Error::new(
 			std::io::ErrorKind::NotFound,
 			"Path is not a file",
 		))?;
@@ -172,7 +172,7 @@ fn handle_g1t(args: G1tSubCommand) -> anyhow::Result<()> {
 	debug!("g1t file: {:?}", args.input);
 
 	if !args.input.is_file() {
-		return Err(std::io::Error::new(
+		Err(std::io::Error::new(
 			std::io::ErrorKind::NotFound,
 			"Path is not a file",
 		))?;
