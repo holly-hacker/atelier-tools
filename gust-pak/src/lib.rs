@@ -44,6 +44,18 @@ impl GustPak {
 		trace!(?header);
 
 		let entries = match pak_type {
+			PakEntryType::Entry32 => {
+				debug_assert_eq!(pak_key, None);
+				let mut entries: Vec<Entry32> = Vec::with_capacity(header.file_count as usize);
+
+				for _ in 0..header.file_count {
+					let entry = Entry32::read(&mut reader)?;
+					trace!(?entry);
+					entries.push(entry);
+				}
+
+				PakEntryList::Entry32(entries)
+			}
 			PakEntryType::Entry64 => {
 				debug_assert_eq!(pak_key, None);
 				let mut entries: Vec<Entry64> = Vec::with_capacity(header.file_count as usize);
@@ -92,10 +104,9 @@ impl GustPak {
 
 	fn get_pak_type(version: GameVersion) -> PakEntryType {
 		match version {
+			GameVersion::A17 => PakEntryType::Entry32,
 			// Starting from A18
-			GameVersion::A17 | GameVersion::A18 | GameVersion::A19 | GameVersion::A21 => {
-				PakEntryType::Entry64
-			}
+			GameVersion::A18 | GameVersion::A19 | GameVersion::A21 => PakEntryType::Entry64,
 			// Starting from A22
 			GameVersion::A22 | GameVersion::A23 | GameVersion::A24 => PakEntryType::Entry64Ext,
 		}
@@ -171,6 +182,53 @@ impl PakHeader {
 }
 
 // Not present: Entry32 used by A17 (Atelier Sophie)
+
+/// File entries for games up to and including A17 (Atelier Sophie)
+#[derive(custom_debug::Debug, Clone)]
+pub struct Entry32 {
+	file_name: String,
+	#[debug(format = "{:#x}")]
+	file_size: u32,
+	/// The xor key used to decrypt the file name and content.
+	file_key: [u8; 20],
+	/// The data offset of this file's data in the .pak file. This is not the file offset.
+	#[debug(format = "{:#x}")]
+	data_offset: u32,
+	#[debug(format = "{:#x}")]
+	flags: u32,
+}
+
+impl Entry32 {
+	fn read(mut reader: impl Read) -> Result<Self, PakReadError> {
+		let mut file_name_bytes = [0; 128];
+		reader.read_exact(&mut file_name_bytes)?;
+
+		let size = reader.ioread()?;
+
+		let mut file_key = [0; 20];
+		reader.read_exact(&mut file_key)?;
+
+		let data_offset = reader.ioread()?;
+		let flags = reader.ioread()?;
+
+		// decrypt filename
+		GustPak::decrypt(&mut file_name_bytes, &file_key, None);
+
+		// convert filename to string
+		let file_name_cstr = CStr::from_bytes_until_nul(&file_name_bytes)?;
+		let file_name_str = file_name_cstr.to_str()?;
+		let file_name = file_name_str.to_string();
+		debug_assert!(file_name.is_ascii(), "file names should be ascii");
+
+		Ok(Self {
+			file_name,
+			file_size: size,
+			file_key,
+			data_offset,
+			flags,
+		})
+	}
+}
 
 /// File entries for games starting from A18 (Atelier Firis)
 #[derive(custom_debug::Debug, Clone)]
@@ -276,7 +334,7 @@ impl Entry64Ext {
 
 /// A common representation of the file entries in a .pak file.
 pub enum PakEntryList {
-	// Entry32(Vec<Entry32>),
+	Entry32(Vec<Entry32>),
 	Entry64(Vec<Entry64>),
 	Entry64Ext(Vec<Entry64Ext>),
 }
@@ -285,6 +343,7 @@ impl PakEntryList {
 	#[must_use]
 	pub fn len(&self) -> usize {
 		match self {
+			PakEntryList::Entry32(v) => v.len(),
 			PakEntryList::Entry64(v) => v.len(),
 			PakEntryList::Entry64Ext(v) => v.len(),
 		}
@@ -314,6 +373,11 @@ impl<'pak> Iterator for PakEntryIterator<'pak> {
 
 	fn next(&mut self) -> Option<Self::Item> {
 		match self.list {
+			PakEntryList::Entry32(v) => {
+				let entry = v.get(self.index)?;
+				self.index += 1;
+				Some(PakEntryRef::Entry32(entry))
+			}
 			PakEntryList::Entry64(v) => {
 				let entry = v.get(self.index)?;
 				self.index += 1;
@@ -331,7 +395,7 @@ impl<'pak> Iterator for PakEntryIterator<'pak> {
 /// An owned version of [PakEntry]
 #[derive(Debug, Clone)]
 pub enum PakEntry {
-	// Entry32(Entry32),
+	Entry32(Entry32),
 	Entry64(Entry64),
 	Entry64Ext(Entry64Ext),
 }
@@ -339,6 +403,7 @@ pub enum PakEntry {
 impl PakEntry {
 	pub fn as_ref(&self) -> PakEntryRef {
 		match self {
+			PakEntry::Entry32(e) => PakEntryRef::Entry32(e),
 			PakEntry::Entry64(e) => PakEntryRef::Entry64(e),
 			PakEntry::Entry64Ext(e) => PakEntryRef::Entry64Ext(e),
 		}
@@ -348,7 +413,7 @@ impl PakEntry {
 #[derive(Debug, Clone, Copy)]
 /// A common representation of a file in a .pak file.
 pub enum PakEntryRef<'pak> {
-	// Entry32(&'pak Entry32),
+	Entry32(&'pak Entry32),
 	Entry64(&'pak Entry64),
 	Entry64Ext(&'pak Entry64Ext),
 }
@@ -357,6 +422,7 @@ impl<'pak> PakEntryRef<'pak> {
 	/// Gets the file name
 	pub fn get_file_name(&'pak self) -> &'pak str {
 		match self {
+			PakEntryRef::Entry32(e) => &e.file_name,
 			PakEntryRef::Entry64(e) => &e.file_name,
 			PakEntryRef::Entry64Ext(e) => &e.file_name,
 		}
@@ -365,6 +431,7 @@ impl<'pak> PakEntryRef<'pak> {
 	/// Gets the file size
 	pub fn get_file_size(&'pak self) -> u32 {
 		match self {
+			PakEntryRef::Entry32(e) => e.file_size,
 			PakEntryRef::Entry64(e) => e.file_size,
 			PakEntryRef::Entry64Ext(e) => e.file_size,
 		}
@@ -373,6 +440,7 @@ impl<'pak> PakEntryRef<'pak> {
 	/// Gets the file offset
 	fn get_data_offset(&'pak self) -> u64 {
 		match self {
+			PakEntryRef::Entry32(e) => e.data_offset as u64,
 			PakEntryRef::Entry64(e) => e.data_offset,
 			PakEntryRef::Entry64Ext(e) => e.data_offset,
 		}
@@ -381,6 +449,7 @@ impl<'pak> PakEntryRef<'pak> {
 	/// Gets the file's encryption key
 	fn get_file_key(&'pak self) -> &'pak [u8] {
 		match self {
+			PakEntryRef::Entry32(e) => &e.file_key,
 			PakEntryRef::Entry64(e) => &e.file_key,
 			PakEntryRef::Entry64Ext(e) => &e.file_key,
 		}
@@ -432,6 +501,7 @@ impl<'pak> PakEntryRef<'pak> {
 
 	pub fn into_owned(self) -> PakEntry {
 		match self {
+			PakEntryRef::Entry32(e) => PakEntry::Entry32(e.clone()),
 			PakEntryRef::Entry64(e) => PakEntry::Entry64(e.clone()),
 			PakEntryRef::Entry64Ext(e) => PakEntry::Entry64Ext(e.clone()),
 		}
@@ -440,7 +510,7 @@ impl<'pak> PakEntryRef<'pak> {
 
 #[derive(Debug)]
 enum PakEntryType {
-	// Entry32,
+	Entry32,
 	Entry64,
 	Entry64Ext,
 }
