@@ -7,12 +7,15 @@ Functionality will likely be limited to modern Atelier games that I own.
 ## Functionality
 
 - `.pak` decoding:
-  - [ ] Atelier Sophie
-  - [ ] Atelier Firis
-  - [ ] Atelier Lydie & Suelle
-  - [ ] Atelier Ryza
-  - [ ] Atelier Ryza 2
-  - [ ] Atelier Sophie 2
+  - [x] Atelier Sophie DX
+    - [ ] Atelier Sophie DX Artbook
+  - [x] Atelier Firis DX
+    - [ ] Atelier Firis DX Artbook
+  - [x] Atelier Lydie & Suelle DX
+    - [ ] Atelier Lydie & Suelle DX Artbook
+  - [x] Atelier Ryza
+  - [x] Atelier Ryza 2
+  - [ ] Atelier Sophie 2 (untested but should work)
   - [x] Atelier Ryza 3
 - `.g1t` parsing and decoding:
   - Platforms:
@@ -27,7 +30,7 @@ Functionality will likely be limited to modern Atelier games that I own.
     - [x] BC7 (missing mode 2 support which is unused in tested games)
     - [ ] Other types that are unused in tested games
 
-Tested games:
+Texture support:
 
 - Atelier Ryza 3: 5740/5964 (96.2%) textures supported
 
