@@ -93,9 +93,11 @@ impl GustPak {
 	fn get_pak_type(version: GameVersion) -> PakEntryType {
 		match version {
 			// Starting from A18
-			GameVersion::A21 => PakEntryType::Entry64,
+			GameVersion::A17 | GameVersion::A18 | GameVersion::A19 | GameVersion::A21 => {
+				PakEntryType::Entry64
+			}
 			// Starting from A22
-			GameVersion::A22 | GameVersion::A24 => PakEntryType::Entry64Ext,
+			GameVersion::A22 | GameVersion::A23 | GameVersion::A24 => PakEntryType::Entry64Ext,
 		}
 	}
 
@@ -104,7 +106,12 @@ impl GustPak {
 		// Only games starting from A23 use a key.
 		// These keys look like base64 but are interpreted as an ascii xor key.
 		match version {
-			GameVersion::A21 | GameVersion::A22 => None,
+			GameVersion::A17
+			| GameVersion::A18
+			| GameVersion::A19
+			| GameVersion::A21
+			| GameVersion::A22 => None,
+			GameVersion::A23 => Some(b"dGGKXLHLuCJwv8aBc3YQX6X6sREVPchs"),
 			GameVersion::A24 => Some(b"fyrixtT9AhA4v0cFahgMcgVwxFrry42A"),
 		}
 	}

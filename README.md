@@ -12,8 +12,8 @@ Functionality will likely be limited to modern Atelier games that I own.
   - [ ] Atelier Lydie & Suelle
   - [ ] Atelier Ryza
   - [ ] Atelier Ryza 2
-  - [x] Atelier Ryza 3
   - [ ] Atelier Sophie 2
+  - [x] Atelier Ryza 3
 - `.g1t` parsing and decoding:
   - Platforms:
     - [x] Windows

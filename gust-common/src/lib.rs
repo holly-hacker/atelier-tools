@@ -7,6 +7,20 @@ use strum::EnumMessage;
 #[derive(Debug, Copy, Clone, strum::EnumMessage, strum::EnumString, strum::EnumIter)]
 #[strum(ascii_case_insensitive)]
 pub enum GameVersion {
+	/// Atelier Sophie: The Alchemist of the Mysterious Book
+	#[strum(message = "Atelier Sophie")]
+	#[strum(detailed_message = "Atelier Sophie: The Alchemist of the Mysterious Book")]
+	A17,
+	/// Atelier Firis: The Alchemist and the Mysterious Journey
+	#[strum(message = "Atelier Firis")]
+	#[strum(detailed_message = "Atelier Firis: The Alchemist and the Mysterious Journey")]
+	A18,
+	/// Atelier Lydie & Suelle: The Alchemists and the Mysterious Paintings
+	#[strum(message = "Atelier Lydie & Suelle")]
+	#[strum(
+		detailed_message = "Atelier Lydie & Suelle: The Alchemists and the Mysterious Paintings"
+	)]
+	A19,
 	/// Atelier Ryza: Ever Darkness & the Secret Hideout
 	#[strum(message = "Atelier Ryza")]
 	#[strum(detailed_message = "Atelier Ryza: Ever Darkness & the Secret Hideout")]
@@ -15,6 +29,10 @@ pub enum GameVersion {
 	#[strum(message = "Atelier Ryza 2")]
 	#[strum(detailed_message = "Atelier Ryza 2: Lost Legends & the Secret Fairy")]
 	A22,
+	/// Atelier Sophie 2: The Alchemist of the Mysterious Dream
+	#[strum(message = "Atelier Sophie 2")]
+	#[strum(detailed_message = "Atelier Sophie 2: The Alchemist of the Mysterious Dream")]
+	A23,
 	/// Atelier Ryza 3: Alchemist of the End & the Secret Key
 	#[strum(message = "Atelier Ryza 3")]
 	#[strum(detailed_message = "Atelier Ryza 3: Alchemist of the End & the Secret Key")]
