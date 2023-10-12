@@ -1,18 +1,16 @@
 mod blocks;
 
-use tracing::debug;
-
 use crate::{errors::Bc7Error, Color4};
 
 pub fn read_image(data: &[u8], width: usize, height: usize) -> Result<Vec<u8>, Bc7Error> {
 	let blocks_x = usize::max(1, (width + 3) / 4);
 	let blocks_y = usize::max(1, (height + 3) / 4);
 	let block_count = blocks_x * blocks_y;
-	let pixel_count = block_count * 16;
+	let decoded_pixel_count = block_count * 16;
 
 	// assume 128 bits are read at once (16 bytes)
 	// the size of each chunk is a 4x4 block of rgba8 pixels
-	let mut decoded_pixels = vec![Color4::default(); pixel_count];
+	let mut decoded_pixels = vec![Color4::default(); decoded_pixel_count];
 	for (chunk_index, chunk) in data.chunks_exact(16).enumerate() {
 		let span = tracing::trace_span!("chunk", chunk_index);
 		let _guard = span.enter();
@@ -52,7 +50,7 @@ pub fn read_image(data: &[u8], width: usize, height: usize) -> Result<Vec<u8>, B
 				.copy_from_slice(&line[0..width * 4]);
 		});
 
-	debug!("image decoded");
+	tracing::debug!("image decoded");
 
 	Ok(final_pixels)
 }

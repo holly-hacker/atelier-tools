@@ -69,10 +69,10 @@ fn decode_block(block: &[u8]) -> ColorBlock {
 
 	let color_0 = u16::from_le_bytes([block[0], block[1]]);
 	let color_1 = u16::from_le_bytes([block[2], block[3]]);
-	let bitmap = u32::from_le_bytes([block[4], block[5], block[6], block[7]]);
+	let color_bitmap = u32::from_le_bytes([block[4], block[5], block[6], block[7]]);
 
-	// if color0 > color1, the color format is RGB 5:6:5
-	// otherwise, the color format is RGBA 5:5:5:1
+	// if color0 > color1, the output color format is equivalent to RGB 5:6:5
+	// otherwise, the output color format is equivalent to RGBA 5:5:5:1
 	let is_opaque = color_0 > color_1;
 
 	let color_0 = unpack_dxt_color_565(color_0);
@@ -81,7 +81,7 @@ fn decode_block(block: &[u8]) -> ColorBlock {
 	let mut color_block = ColorBlock::default();
 	for y in 0..4 {
 		for x in 0..4 {
-			let bits = (bitmap >> ((x + y * 4) * 2)) & 0b11;
+			let bits = (color_bitmap >> ((x + y * 4) * 2)) & 0b11;
 			color_block[y][x] = if is_opaque {
 				match bits {
 					0b00 => color_0,
