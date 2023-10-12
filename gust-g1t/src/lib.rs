@@ -157,6 +157,19 @@ impl GustG1t {
 
 		// TODO: deduplicate this code
 		match texture_type_to_dds_format(texture.header.texture_type) {
+			Some(dds_decoder::DdsFormat::RGBA8) => {
+				// assuming mipmap level 0
+				let data_size = texture.width as usize * texture.height as usize * 4;
+				debug!(?data_size, "Size of image data");
+
+				reader.seek(std::io::SeekFrom::Start(texture.absolute_data_offset))?;
+
+				let mut data = vec![0u8; data_size];
+				reader.read_exact(&mut data)?;
+				debug!(len = data.len(), "Data read");
+
+				Ok(data)
+			}
 			Some(dds_decoder::DdsFormat::BC1) => {
 				// assuming mipmap level 0
 				let blocks_x = usize::max(1, (texture.width as usize + 3) / 4);

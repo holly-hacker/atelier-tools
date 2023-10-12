@@ -24,21 +24,21 @@ Functionality will likely be limited to PC versions of modern Atelier games that
     - [ ] Playstation 4
     - [ ] Platforms not present in PC versions
   - Texture formats:
-    - [ ] RGBA8 (0x01, 0x02)
-    - [x] BC1/DXT1 (0x59)
-    - [x] BC3/DXT5 (0x5B)
-    - [ ] BC6H (0x5E)
+    - [x] RGBA8
+    - [x] BC1/DXT1
+    - [x] BC3/DXT5
+    - [ ] BC6H
     - [x] BC7
 
 g1t texture support:
 
-- Atelier Sophie: 1716/1725 (99.5%) textures supported
-- Atelier Firis: 2634/2648 (99.5%) textures supported
-- Atelier Lydie and Suelle: 5166/5178 (99.8%) textures supported
-- Atelier Ryza: 2184/2197 (99.4%) textures supported
-- Atelier Ryza 2: 2931/2949 (99.4%) textures supported
-- Atelier Sophie 2: 3272/3295 (99.3%) textures supported
-- Atelier Ryza 3: 6217/6290 (98.8%) textures supported
+- Atelier Sophie: 1725/1725 (100.0%) textures supported
+- Atelier Firis: 2645/2648 (99.9%) textures supported
+- Atelier Lydie and Suelle: 5176/5178 (100.0%) textures supported
+- Atelier Ryza: 2194/2197 (99.9%) textures supported
+- Atelier Ryza 2: 2941/2949 (99.7%) textures supported
+- Atelier Sophie 2: 3284/3295 (99.7%) textures supported
+- Atelier Ryza 3: 6270/6290 (99.7%) textures supported
 
 <!-- Update note: make sure to use the -d flag -->
 
