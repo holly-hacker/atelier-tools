@@ -15,7 +15,7 @@ Functionality will likely be limited to modern Atelier games that I own.
     - [ ] Atelier Lydie & Suelle DX Artbook
   - [x] Atelier Ryza
   - [x] Atelier Ryza 2
-  - [ ] Atelier Sophie 2 (untested but should work)
+  - [x] Atelier Sophie 2
   - [x] Atelier Ryza 3
 - `.g1t` parsing and decoding:
   - Platforms:
@@ -37,6 +37,7 @@ g1t texture support:
 - Atelier Lydie & Suelle: 1447/5178 (27.9%) textures supported
 - Atelier Ryza: 481/2197 (21.9%) textures supported
 - Atelier Ryza 2: 620/2949 (21.0%) textures supported
+- Atelier Sophie 2: 1329/3246 (40.9%) textures supported
 - Atelier Ryza 3: 5740/5964 (96.2%) textures supported
 
 ## Goals
