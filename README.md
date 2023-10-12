@@ -28,18 +28,18 @@ Functionality will likely be limited to PC versions of modern Atelier games that
     - [x] DXT1 (0x59)
     - [ ] DXT5 (0x5B)
     - [ ] BC6H (0x5E)
-    - [x] BC7 (missing mode 2 support which is unused in tested games)
-    - [ ] Other types that are unused in tested games
+    - [x] BC7
+    - [ ] Other untested types
 
 g1t texture support:
 
-- Atelier Sophie: 323/1725 (18.7%) textures supported
+- Atelier Sophie: 463/1725 (26.8%) textures supported
 - Atelier Firis: 1459/2648 (55.1%) textures supported
-- Atelier Lydie and Suelle: 1446/5178 (27.9%) textures supported
-- Atelier Ryza: 480/2197 (21.8%) textures supported
-- Atelier Ryza 2: 619/2949 (21.0%) textures supported
-- Atelier Sophie 2: 708/3274 (21.6%) textures supported
-- Atelier Ryza 3: 5736/5964 (96.2%) textures supported
+- Atelier Lydie and Suelle: 1447/5178 (27.9%) textures supported
+- Atelier Ryza: 481/2197 (21.9%) textures supported
+- Atelier Ryza 2: 620/2949 (21.0%) textures supported
+- Atelier Sophie 2: 1329/3246 (40.9%) textures supported
+- Atelier Ryza 3: 5740/5964 (96.2%) textures supported
 
 <!-- Update note: make sure to use the -d flag -->
 

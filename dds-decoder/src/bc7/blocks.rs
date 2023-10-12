@@ -22,6 +22,19 @@ const PARTITION2: [u8; 64 * 16] =
 ];
 
 #[rustfmt::skip]
+const PARTITION3: [u8; 64 * 16] =
+[
+	0,0,1,1,0,0,1,1,0,2,2,1,2,2,2,2, 0,0,0,1,0,0,1,1,2,2,1,1,2,2,2,1, 0,0,0,0,2,0,0,1,2,2,1,1,2,2,1,1, 0,2,2,2,0,0,2,2,0,0,1,1,0,1,1,1, 0,0,0,0,0,0,0,0,1,1,2,2,1,1,2,2, 0,0,1,1,0,0,1,1,0,0,2,2,0,0,2,2, 0,0,2,2,0,0,2,2,1,1,1,1,1,1,1,1, 0,0,1,1,0,0,1,1,2,2,1,1,2,2,1,1,
+	0,0,0,0,0,0,0,0,1,1,1,1,2,2,2,2, 0,0,0,0,1,1,1,1,1,1,1,1,2,2,2,2, 0,0,0,0,1,1,1,1,2,2,2,2,2,2,2,2, 0,0,1,2,0,0,1,2,0,0,1,2,0,0,1,2, 0,1,1,2,0,1,1,2,0,1,1,2,0,1,1,2, 0,1,2,2,0,1,2,2,0,1,2,2,0,1,2,2, 0,0,1,1,0,1,1,2,1,1,2,2,1,2,2,2, 0,0,1,1,2,0,0,1,2,2,0,0,2,2,2,0,
+	0,0,0,1,0,0,1,1,0,1,1,2,1,1,2,2, 0,1,1,1,0,0,1,1,2,0,0,1,2,2,0,0, 0,0,0,0,1,1,2,2,1,1,2,2,1,1,2,2, 0,0,2,2,0,0,2,2,0,0,2,2,1,1,1,1, 0,1,1,1,0,1,1,1,0,2,2,2,0,2,2,2, 0,0,0,1,0,0,0,1,2,2,2,1,2,2,2,1, 0,0,0,0,0,0,1,1,0,1,2,2,0,1,2,2, 0,0,0,0,1,1,0,0,2,2,1,0,2,2,1,0,
+	0,1,2,2,0,1,2,2,0,0,1,1,0,0,0,0, 0,0,1,2,0,0,1,2,1,1,2,2,2,2,2,2, 0,1,1,0,1,2,2,1,1,2,2,1,0,1,1,0, 0,0,0,0,0,1,1,0,1,2,2,1,1,2,2,1, 0,0,2,2,1,1,0,2,1,1,0,2,0,0,2,2, 0,1,1,0,0,1,1,0,2,0,0,2,2,2,2,2, 0,0,1,1,0,1,2,2,0,1,2,2,0,0,1,1, 0,0,0,0,2,0,0,0,2,2,1,1,2,2,2,1,
+	0,0,0,0,0,0,0,2,1,1,2,2,1,2,2,2, 0,2,2,2,0,0,2,2,0,0,1,2,0,0,1,1, 0,0,1,1,0,0,1,2,0,0,2,2,0,2,2,2, 0,1,2,0,0,1,2,0,0,1,2,0,0,1,2,0, 0,0,0,0,1,1,1,1,2,2,2,2,0,0,0,0, 0,1,2,0,1,2,0,1,2,0,1,2,0,1,2,0, 0,1,2,0,2,0,1,2,1,2,0,1,0,1,2,0, 0,0,1,1,2,2,0,0,1,1,2,2,0,0,1,1,
+	0,0,1,1,1,1,2,2,2,2,0,0,0,0,1,1, 0,1,0,1,0,1,0,1,2,2,2,2,2,2,2,2, 0,0,0,0,0,0,0,0,2,1,2,1,2,1,2,1, 0,0,2,2,1,1,2,2,0,0,2,2,1,1,2,2, 0,0,2,2,0,0,1,1,0,0,2,2,0,0,1,1, 0,2,2,0,1,2,2,1,0,2,2,0,1,2,2,1, 0,1,0,1,2,2,2,2,2,2,2,2,0,1,0,1, 0,0,0,0,2,1,2,1,2,1,2,1,2,1,2,1,
+	0,1,0,1,0,1,0,1,0,1,0,1,2,2,2,2, 0,2,2,2,0,1,1,1,0,2,2,2,0,1,1,1, 0,0,0,2,1,1,1,2,0,0,0,2,1,1,1,2, 0,0,0,0,2,1,1,2,2,1,1,2,2,1,1,2, 0,2,2,2,0,1,1,1,0,1,1,1,0,2,2,2, 0,0,0,2,1,1,1,2,1,1,1,2,0,0,0,2, 0,1,1,0,0,1,1,0,0,1,1,0,2,2,2,2, 0,0,0,0,0,0,0,0,2,1,1,2,2,1,1,2,
+	0,1,1,0,0,1,1,0,2,2,2,2,2,2,2,2, 0,0,2,2,0,0,1,1,0,0,1,1,0,0,2,2, 0,0,2,2,1,1,2,2,1,1,2,2,0,0,2,2, 0,0,0,0,0,0,0,0,0,0,0,0,2,1,1,2, 0,0,0,2,0,0,0,1,0,0,0,2,0,0,0,1, 0,2,2,2,1,2,2,2,0,2,2,2,1,2,2,2, 0,1,0,1,2,2,2,2,2,2,2,2,2,2,2,2, 0,1,1,1,2,0,1,1,2,2,0,1,2,2,2,0,
+];
+
+#[rustfmt::skip]
 const TABLE_ANCHOR_INDEX_SECOND_SUBSET: [u8; 64] = [
 	15,15,15,15,15,15,15,15,
 	15,15,15,15,15,15,15,15,
@@ -31,6 +44,30 @@ const TABLE_ANCHOR_INDEX_SECOND_SUBSET: [u8; 64] = [
 	 2, 8, 2, 2, 2,15,15, 6,
 	 6, 2, 6, 8,15,15, 2, 2,
 	15,15,15,15,15, 2, 2,15,
+];
+
+#[rustfmt::skip]
+const TABLE_ANCHOR_INDEX_THIRD_SUBSET_1: [u8; 64] = [
+	 3, 3,15,15, 8, 3,15,15,
+	 8, 8, 6, 6, 6, 5, 3, 3,
+	 3, 3, 8,15, 3, 3, 6,10,
+	 5, 8, 8, 6, 8, 5,15,15,
+	 8,15, 3, 5, 6,10, 8,15,
+	15, 3,15, 5,15,15,15,15,
+	 3,15, 5, 5, 5, 8, 5,10,
+	 5,10, 8,13,15,12, 3, 3
+];
+
+#[rustfmt::skip]
+const TABLE_ANCHOR_INDEX_THIRD_SUBSET_2: [u8; 64] = [
+	15, 8, 8, 3,15,15, 3, 8,
+	15,15,15,15,15,15,15, 8,
+	15, 8,15, 3,15, 8,15, 8,
+	 3,15, 6,10,15,15,10, 8,
+	15, 3,15,10,10, 8, 9,10,
+	 6,15, 8,15, 3, 6, 6, 8,
+	15, 3,15,15,15,15,15,15,
+	15,15,15,15, 3,15,15, 8
 ];
 
 const WEIGHTS2: [u8; 4] = [0, 21, 43, 64];
@@ -44,12 +81,93 @@ pub fn decode(data: &[u8]) -> Result<ColorBlock, Bc7Error> {
 	// trace!(mode, "Decoding BC7");
 
 	match mode {
-		0 | 2 => Err(Bc7Error::UnimplementedBc7BlockMode(mode)),
+		0 | 2 => Ok(decode_mode_0_2(data, mode)),
 		1 | 3 | 7 => Ok(decode_mode_1_3_7(data, mode)),
 		4 | 5 => Ok(decode_mode_4_5(data, mode)),
 		6 => Ok(decode_mode_6(data)),
 		_ => Err(Bc7Error::InvalidBc7BlockMode(mode)),
 	}
+}
+
+fn decode_mode_0_2(data: &[u8], mode: u8) -> ColorBlock {
+	debug_assert!(matches!(mode, 0 | 2));
+
+	const ENDPOINTS: usize = 6;
+	const COMPS: usize = 3;
+	let weight_bits: usize = if mode == 0 { 3 } else { 2 };
+	let endpoint_bits: usize = if mode == 0 { 4 } else { 5 };
+	let pbits_count: usize = if mode == 0 { 6 } else { 0 };
+	let weight_vals: usize = 1 << weight_bits;
+
+	let mut bit_offset = 0;
+
+	let read_mode = read_bits32(data, &mut bit_offset, mode as usize + 1).trailing_zeros() as u8;
+	debug_assert_eq!(read_mode, mode);
+
+	let part = read_bits32(data, &mut bit_offset, if mode == 0 { 4 } else { 6 }) as usize;
+
+	let mut endpoints = [Color4::default(); ENDPOINTS];
+	for c in 0..COMPS {
+		for e in 0..ENDPOINTS {
+			endpoints[e].components[c] = read_bits32(data, &mut bit_offset, endpoint_bits) as u8;
+		}
+	}
+
+	let mut pbits = [0usize; 6];
+	for p in 0..pbits_count {
+		pbits[p] = read_bits32(data, &mut bit_offset, 1) as usize;
+	}
+
+	let mut weights = [0usize; 16];
+	for i in 0..16 {
+		let bits = if (i == 0)
+			|| (i as u8 == TABLE_ANCHOR_INDEX_THIRD_SUBSET_1[part])
+			|| (i as u8 == TABLE_ANCHOR_INDEX_THIRD_SUBSET_2[part])
+		{
+			weight_bits - 1
+		} else {
+			weight_bits
+		};
+		weights[i] = read_bits32(data, &mut bit_offset, bits) as usize;
+	}
+
+	debug_assert_eq!(bit_offset, 128);
+
+	for e in 0..ENDPOINTS {
+		for c in 0..4 {
+			endpoints[e].components[c] = if pbits_count != 0 {
+				bc7_dequant_with_pbit(endpoints[e].components[c], pbits[e], endpoint_bits)
+			} else {
+				bc7_dequant(endpoints[e].components[c], endpoint_bits)
+			};
+		}
+	}
+
+	let mut block_colors = [[Color4::default(); 8]; 3];
+	for s in 0..3 {
+		for i in 0..weight_vals {
+			for c in 0..3 {
+				block_colors[s][i].components[c] = bc7_interp(
+					endpoints[s * 2].components[c],
+					endpoints[s * 2 + 1].components[c],
+					i,
+					weight_bits,
+				);
+			}
+			block_colors[s][i].components[3] = 255;
+		}
+	}
+
+	let mut ret = [[Color4::default(); 4]; 4];
+
+	for i in 0..16 {
+		let x = i & 3;
+		let y = i >> 2;
+
+		ret[y][x] = block_colors[PARTITION3[part * 16 + i] as usize][weights[i]];
+	}
+
+	ret
 }
 
 fn decode_mode_1_3_7(data: &[u8], mode: u8) -> ColorBlock {

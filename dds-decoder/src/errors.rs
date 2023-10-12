@@ -14,6 +14,4 @@ pub enum DdsDecodeError {
 pub enum Bc7Error {
 	#[error("Invalid block mode: {0}")]
 	InvalidBc7BlockMode(u8),
-	#[error("Unimplemented block mode: {0}")]
-	UnimplementedBc7BlockMode(u8),
 }
