@@ -38,8 +38,8 @@ g1t texture support:
 - Atelier Lydie and Suelle: 1447/5178 (27.9%) textures supported
 - Atelier Ryza: 481/2197 (21.9%) textures supported
 - Atelier Ryza 2: 620/2949 (21.0%) textures supported
-- Atelier Sophie 2: 1329/3246 (40.9%) textures supported
-- Atelier Ryza 3: 5740/5964 (96.2%) textures supported
+- Atelier Sophie 2: 1378/3295 (41.8%) textures supported
+- Atelier Ryza 3: 6066/6290 (96.4%) textures supported
 
 <!-- Update note: make sure to use the -d flag -->
 

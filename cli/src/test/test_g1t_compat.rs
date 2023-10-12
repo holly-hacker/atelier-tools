@@ -107,6 +107,9 @@ impl TestG1tCompatibility {
 				}
 			}
 
+			total_textures += total_texture_count;
+			total_unsupported_textures += unsupported_textures.len();
+
 			if unsupported_textures.is_empty() {
 				info!(
 					"{}: {} textures, all supported",
@@ -120,10 +123,8 @@ impl TestG1tCompatibility {
 					total_texture_count,
 					unsupported_textures.len()
 				);
-				total_textures += total_texture_count;
 				for (texture_name, reason) in unsupported_textures {
 					info!("  {}: {}", texture_name, reason);
-					total_unsupported_textures += 1;
 				}
 			}
 		}
