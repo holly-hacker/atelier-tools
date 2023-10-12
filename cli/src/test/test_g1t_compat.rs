@@ -25,10 +25,6 @@ pub struct TestG1tCompatibility {
 	/// the game version to use, eg. `A24` for Atelier Ryza 3
 	#[argh(option, short = 'g')]
 	pub game: String,
-
-	/// test g1t compatibility by decoding the textures, rather than running static checks
-	#[argh(switch, short = 'd', long = "decode")]
-	pub decode: bool,
 }
 
 impl TestG1tCompatibility {
@@ -56,9 +52,7 @@ impl TestG1tCompatibility {
 			self.input.join("Data")
 		};
 
-		if self.decode {
-			info!("Trying to decode all textures, this may take a few minutes");
-		}
+		info!("Trying to decode all textures, this may take a few minutes");
 
 		// TODO: this can happen in parallel
 		let mut total_textures = AtomicUsize::new(0);
@@ -102,20 +96,9 @@ impl TestG1tCompatibility {
 					for texture in &g1t.textures {
 						total_texture_count += 1;
 
-						match self.decode {
-							true => {
-								let reader = entry.get_reader(&file, &index, game_version)?;
-								if let Err(e) = g1t.read_image(texture, reader) {
-									unsupported_textures
-										.push((file_name.to_owned(), e.to_string().into()));
-								}
-							}
-							false => {
-								if let Err(e) = Self::check_texture_compatible(&g1t.header, texture)
-								{
-									unsupported_textures.push((file_name.to_owned(), e));
-								}
-							}
+						let reader = entry.get_reader(&file, &index, game_version)?;
+						if let Err(e) = g1t.read_image(texture, reader) {
+							unsupported_textures.push((file_name.to_owned(), e.to_string().into()));
 						}
 					}
 				}
@@ -157,29 +140,6 @@ impl TestG1tCompatibility {
 			total_textures,
 			(total_textures - total_unsupported_textures) as f64 / (total_textures as f64) * 100.,
 		);
-
-		Ok(())
-	}
-
-	fn check_texture_compatible(
-		header: &gust_g1t::G1tHeader,
-		texture: &gust_g1t::TextureInfo,
-	) -> Result<(), Cow<'static, str>> {
-		if header.platform != gust_g1t::Platform::Windows {
-			return Err(format!("Unsupported platform: {:?}", header.platform).into());
-		}
-
-		if !matches!(texture.header.texture_type, 0x59 | 0x5B | 0x5F) {
-			return Err(format!(
-				"Unsupported texture type: 0x{:02X}",
-				texture.header.texture_type
-			)
-			.into());
-		}
-
-		if texture.frames > 1 {
-			return Err("more than 1 frame".into());
-		}
 
 		Ok(())
 	}
