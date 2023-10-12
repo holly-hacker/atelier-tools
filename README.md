@@ -2,7 +2,7 @@
 
 Tools and libraries for Atelier games by Gust.
 
-Functionality will likely be limited to modern Atelier games that I own.
+Functionality will likely be limited to PC versions of modern Atelier games that I own.
 
 ## Functionality
 
@@ -22,6 +22,7 @@ Functionality will likely be limited to modern Atelier games that I own.
     - [x] Windows
     - [ ] Playstation 2
     - [ ] Playstation 4
+    - [ ] Platforms not present in PC versions
   - Texture formats:
     - [ ] RGBA8 (0x01, 0x02)
     - [x] DXT1 (0x59)
