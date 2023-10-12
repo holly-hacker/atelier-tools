@@ -364,10 +364,10 @@ impl G1tTextureHeader {
 fn texture_type_to_dds_format(texture_type: u8) -> Option<dds_decoder::DdsFormat> {
 	match texture_type {
 		0x01 | 0x02 => Some(dds_decoder::DdsFormat::RGBA8),
-		0x59 => Some(dds_decoder::DdsFormat::BC1),
-		0x5B => Some(dds_decoder::DdsFormat::BC3),
+		0x06 | 0x59 => Some(dds_decoder::DdsFormat::BC1),
+		0x08 | 0x5B => Some(dds_decoder::DdsFormat::BC3),
 		0x5E => Some(dds_decoder::DdsFormat::BC6H),
-		0x5F => Some(dds_decoder::DdsFormat::BC7),
+		0x5F | 0x72 => Some(dds_decoder::DdsFormat::BC7),
 		_ => None,
 	}
 }
