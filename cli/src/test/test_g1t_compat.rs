@@ -147,7 +147,7 @@ impl TestG1tCompatibility {
 			return Err(format!("Unsupported platform: {:?}", header.platform).into());
 		}
 
-		if !matches!(texture.header.texture_type, 0x59 | 0x5F) {
+		if !matches!(texture.header.texture_type, 0x59 | 0x5B | 0x5F) {
 			return Err(format!(
 				"Unsupported texture type: 0x{:02X}",
 				texture.header.texture_type
