@@ -1,9 +1,18 @@
-use std::{borrow::Cow, ffi::OsStr, str::FromStr};
+use std::{
+	borrow::Cow,
+	ffi::OsStr,
+	str::FromStr,
+	sync::{
+		atomic::{AtomicUsize, Ordering},
+		Mutex,
+	},
+};
 
 use anyhow::Context;
 use argh::FromArgs;
 use gust_g1t::GustG1t;
 use gust_pak::GustPak;
+use rayon::prelude::*;
 use tracing::{debug, error, info};
 
 /// Check how many g1t files in the game files are supported
@@ -52,82 +61,95 @@ impl TestG1tCompatibility {
 		}
 
 		// TODO: this can happen in parallel
-		let mut total_textures = 0;
-		let mut total_unsupported_textures = 0;
-		for item in std::fs::read_dir(&data_dir)? {
-			let item = item?;
-			if !item.file_type()?.is_file() {
-				debug!("Skipping {:?} because it's not a file", item.path());
-				continue;
-			}
-
-			if item.path().extension() != Some(OsStr::new("PAK")) {
-				debug!("Skipping {:?} because it's not a .PAK file", item.path());
-				continue;
-			}
-
-			debug!("Reading {:?}", item.path());
-			let file = std::fs::File::open(item.path()).context("open file")?;
-			let index = GustPak::read_index(&file, game_version).context("read index")?;
-
-			let mut unsupported_textures: Vec<(String, Cow<'static, str>)> = vec![];
-			let mut total_texture_count = 0;
-			for entry in index.entries.iter() {
-				let file_name = entry.get_file_name();
-				if !file_name.ends_with(".g1t") {
-					continue;
+		let mut total_textures = AtomicUsize::new(0);
+		let mut total_unsupported_textures = AtomicUsize::new(0);
+		let stdout_lock = Mutex::new(());
+		std::fs::read_dir(data_dir)?
+			.collect::<std::io::Result<Vec<_>>>()?
+			.into_par_iter()
+			.try_for_each(|item| -> anyhow::Result<()> {
+				if !item.file_type()?.is_file() {
+					debug!("Skipping {:?} because it's not a file", item.path());
+					return Ok(());
 				}
 
-				let span =
-					tracing::trace_span!("reading g1t file", file_name = entry.get_file_name());
-				_ = span.enter();
+				if item.path().extension() != Some(OsStr::new("PAK")) {
+					debug!("Skipping {:?} because it's not a .PAK file", item.path());
+					return Ok(());
+				}
 
-				let reader = entry.get_reader(&file, &index, game_version)?;
+				debug!("Reading {:?}", item.path());
+				let file = std::fs::File::open(item.path()).context("open file")?;
+				let index = GustPak::read_index(&file, game_version).context("read index")?;
 
-				let g1t = GustG1t::read(reader)
-					.with_context(|| format!("read g1t file `{file_name}`"))?;
+				let mut unsupported_textures: Vec<(String, Cow<'static, str>)> = vec![];
+				let mut total_texture_count = 0;
+				for entry in index.entries.iter() {
+					let file_name = entry.get_file_name();
+					if !file_name.ends_with(".g1t") {
+						continue;
+					}
 
-				for texture in &g1t.textures {
-					total_texture_count += 1;
+					let span =
+						tracing::trace_span!("reading g1t file", file_name = entry.get_file_name());
+					_ = span.enter();
 
-					match self.decode {
-						true => {
-							let reader = entry.get_reader(&file, &index, game_version)?;
-							if let Err(e) = g1t.read_image(texture, reader) {
-								unsupported_textures
-									.push((file_name.to_owned(), e.to_string().into()));
+					let reader = entry.get_reader(&file, &index, game_version)?;
+
+					let g1t = GustG1t::read(reader)
+						.with_context(|| format!("read g1t file `{file_name}`"))?;
+
+					for texture in &g1t.textures {
+						total_texture_count += 1;
+
+						match self.decode {
+							true => {
+								let reader = entry.get_reader(&file, &index, game_version)?;
+								if let Err(e) = g1t.read_image(texture, reader) {
+									unsupported_textures
+										.push((file_name.to_owned(), e.to_string().into()));
+								}
 							}
-						}
-						false => {
-							if let Err(e) = Self::check_texture_compatible(&g1t.header, texture) {
-								unsupported_textures.push((file_name.to_owned(), e));
+							false => {
+								if let Err(e) = Self::check_texture_compatible(&g1t.header, texture)
+								{
+									unsupported_textures.push((file_name.to_owned(), e));
+								}
 							}
 						}
 					}
 				}
-			}
 
-			total_textures += total_texture_count;
-			total_unsupported_textures += unsupported_textures.len();
+				total_textures.fetch_add(total_texture_count, Ordering::Relaxed);
+				total_unsupported_textures.fetch_add(unsupported_textures.len(), Ordering::Relaxed);
 
-			if unsupported_textures.is_empty() {
-				info!(
-					"{}: {} textures, all supported",
-					item.path().to_string_lossy(),
-					total_texture_count
-				);
-			} else {
-				info!(
-					"{}: {} textures, {} unsupported",
-					item.path().to_string_lossy(),
-					total_texture_count,
-					unsupported_textures.len()
-				);
-				for (texture_name, reason) in unsupported_textures {
-					info!("  {}: {}", texture_name, reason);
+				let stdout_guard = stdout_lock.lock().expect("output lock poisoned");
+
+				if unsupported_textures.is_empty() {
+					info!(
+						"{}: {} textures, all supported",
+						item.path().to_string_lossy(),
+						total_texture_count
+					);
+				} else {
+					info!(
+						"{}: {} textures, {} unsupported",
+						item.path().to_string_lossy(),
+						total_texture_count,
+						unsupported_textures.len()
+					);
+					for (texture_name, reason) in unsupported_textures {
+						info!("  {}: {}", texture_name, reason);
+					}
 				}
-			}
-		}
+
+				drop(stdout_guard);
+
+				Ok(())
+			})?;
+
+		let total_textures = *total_textures.get_mut();
+		let total_unsupported_textures = *total_unsupported_textures.get_mut();
 
 		info!(
 			"{}/{} ({:.1}%) textures supported",

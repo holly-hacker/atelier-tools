@@ -11,5 +11,6 @@ argh = "0.1.10"
 gust-g1t = { path = "../gust-g1t" }
 gust-pak = { path = "../gust-pak" }
 image = { version = "0.24.6", default-features = false, features = ["png"] }
+rayon = "1.8.0"
 tracing = "0.1.37"
 tracing-subscriber = "0.3.17"
