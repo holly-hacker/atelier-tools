@@ -3,6 +3,7 @@ use errors::DdsDecodeError;
 mod bc1;
 mod bc7;
 pub mod errors;
+mod util;
 
 pub fn decode_image(
 	format: DdsFormat,
