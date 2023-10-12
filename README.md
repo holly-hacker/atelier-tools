@@ -41,8 +41,10 @@ g1t texture support:
 
 ## Goals
 
-- Be easier to understand and use than [gust_tools](https://github.com/VitaSmith/gust_tools)
+- Be easier to understand than [gust_tools](https://github.com/VitaSmith/gust_tools)
+- Be usable as a library
 - Support unpacking enough file types to create a decent auto-generated wiki
+- (ideally) be faster than gust_tools
 
 ## Anti-goals
 
