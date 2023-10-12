@@ -40,7 +40,7 @@ enum SubCommand {
 #[derive(FromArgs)]
 #[argh(subcommand, name = "pak")]
 struct PakSubCommand {
-	/// the input .pak file
+	/// the input .pak file or a directory containing .pak files
 	#[argh(positional)]
 	pub input: PathBuf,
 
@@ -107,62 +107,80 @@ fn handle_pak(args: PakSubCommand) -> anyhow::Result<()> {
 
 	debug!("Pak file: {:?}", args.input);
 
-	if !args.input.is_file() {
+	let input_files = if args.input.is_dir() {
+		let mut input_files = Vec::new();
+		for entry in std::fs::read_dir(&args.input)? {
+			let entry = entry?;
+			let path = entry.path();
+			if path.is_file()
+				&& path
+					.extension()
+					.map_or(false, |ext| ext.to_ascii_lowercase() == "pak")
+			{
+				input_files.push(path);
+			}
+		}
+		info!("Found {} PAK files", input_files.len());
+		input_files
+	} else if args.input.is_file() {
+		vec![args.input.clone()]
+	} else {
 		Err(std::io::Error::new(
 			std::io::ErrorKind::NotFound,
-			"Path is not a file",
-		))?;
-	}
-	let mut file = File::open(&args.input)?;
+			"Path is not a file or directory",
+		))?
+	};
 
-	let pak = GustPak::read_index(&mut file, game_version).context("read pak file")?;
-	info!("Found {} files in PAK file", pak.entries.len());
+	for input in input_files {
+		let mut file = File::open(&input)?;
 
-	if args.list {
-		for entry in pak.entries.iter() {
-			println!(
-				"- {} ({} bytes)",
-				entry.get_file_name(),
-				entry.get_file_size()
-			);
-		}
-		return Ok(());
-	}
+		let pak = GustPak::read_index(&mut file, game_version).context("read pak file")?;
+		info!("Found {} files in PAK file", pak.entries.len());
 
-	// start extracting the files
-	let output_path = args.output.unwrap_or_else(|| {
-		trace!("no output path specified, using input directory");
-		args.input
-			.parent()
-			.expect("input path has no parent")
-			.to_owned()
-	});
-	info!("Writing files to {}", output_path.to_string_lossy());
-
-	for entry in pak.entries.iter() {
-		let mut reader = entry
-			.get_reader(&mut file, &pak, game_version)
-			.context("get entry reader")?;
-
-		let entry_path = entry
-			.get_file_name()
-			.replace('\\', std::path::MAIN_SEPARATOR_STR);
-		let entry_path = Path::new(entry_path.trim_start_matches(std::path::MAIN_SEPARATOR_STR));
-
-		let file_path = output_path.join(entry_path);
-		let file_directory = file_path.parent().context("file path has no parent")?;
-		std::fs::create_dir_all(file_directory).context("failed to create directory")?;
-
-		let mut file = match std::fs::File::create(&file_path) {
-			Ok(file) => file,
-			Err(e) => {
-				error!("Failed to create file: {}", e);
-				continue;
+		if args.list {
+			for entry in pak.entries.iter() {
+				println!(
+					"- {} ({} bytes)",
+					entry.get_file_name(),
+					entry.get_file_size()
+				);
 			}
-		};
+			return Ok(());
+		}
 
-		debug!("Writing file: {:?}", file_path);
-		std::io::copy(&mut reader, &mut file).context("failed to write file")?;
+		// start extracting the files
+		let output_path = args.output.clone().unwrap_or_else(|| {
+			trace!("no output path specified, using input directory");
+			input.parent().expect("input path has no parent").to_owned()
+		});
+		info!("Writing files to {}", output_path.to_string_lossy());
+
+		for entry in pak.entries.iter() {
+			let mut reader = entry
+				.get_reader(&mut file, &pak, game_version)
+				.context("get entry reader")?;
+
+			let entry_path = entry
+				.get_file_name()
+				.replace('\\', std::path::MAIN_SEPARATOR_STR);
+			let entry_path =
+				Path::new(entry_path.trim_start_matches(std::path::MAIN_SEPARATOR_STR));
+
+			let file_path = output_path.join(entry_path);
+			let file_directory = file_path.parent().context("file path has no parent")?;
+			std::fs::create_dir_all(file_directory).context("failed to create directory")?;
+
+			let mut file = match std::fs::File::create(&file_path) {
+				Ok(file) => file,
+				Err(e) => {
+					error!("Failed to create file: {}", e);
+					continue;
+				}
+			};
+
+			debug!("Writing file: {:?}", file_path);
+			std::io::copy(&mut reader, &mut file).context("failed to write file")?;
+		}
 	}
 
 	Ok(())
