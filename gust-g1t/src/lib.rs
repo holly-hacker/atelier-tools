@@ -48,7 +48,7 @@ impl GustG1t {
 
 		// read textures
 		let mut textures = vec![];
-		if let Some((texture_index, offset)) = offsets.into_iter().enumerate().next() {
+		for (texture_index, offset) in offsets.into_iter().enumerate() {
 			let span = tracing::debug_span!("texture", texture_index, offset);
 			let _guard = span.enter();
 

@@ -221,39 +221,44 @@ fn handle_g1t(args: G1tSubCommand) -> anyhow::Result<()> {
 		info!("Read g1t file");
 
 		let texture_count = g1t.textures.len();
-		match texture_count {
-			0 => {
-				info!("No textures found");
-				return Ok(());
-			}
-			1 => {
-				let texture = &g1t.textures[0];
-				let image_bytes = g1t.read_image(texture, &mut file).context("read image")?;
-				let image_buffer =
-					image::RgbaImage::from_vec(texture.width, texture.height, image_bytes)
-						.context("image to rgbimage vec")?;
 
-				let output_path = args.output.clone().unwrap_or_else(|| {
-					trace!("no output path specified, using input directory");
-					input.parent().expect("input path has no parent").join(
-						input
-							.file_stem()
-							.expect("get file stem")
-							.to_str()
-							.expect("file name to string")
-							.to_owned() + ".png",
-					)
-				});
+		if texture_count == 0 {
+			info!("No textures found");
+			continue;
+		}
 
-				debug!("saving image...");
-				image_buffer
-					.save_with_format(output_path, image::ImageFormat::Png)
-					.context("save file")?;
-				info!("Image saved");
-			}
-			_ => {
-				todo!("write multiple textures");
-			}
+		for (texture_index, texture) in g1t.textures.iter().enumerate() {
+			let image_bytes = g1t.read_image(texture, &mut file).context("read image")?;
+			let image_buffer =
+				image::RgbaImage::from_vec(texture.width, texture.height, image_bytes)
+					.context("image to rgbimage vec")?;
+
+			let output_dir = args.output.clone().unwrap_or_else(|| {
+				trace!("no output directory specified, using input directory");
+				input
+					.parent()
+					.expect("input path has no parent")
+					.to_path_buf()
+			});
+
+			let texture_idx_string = (g1t.textures.len() > 1)
+				.then(|| format!("_{texture_index}"))
+				.unwrap_or_default();
+			let output_file_name = input
+				.file_stem()
+				.expect("get file stem")
+				.to_str()
+				.expect("file name to string")
+				.to_owned() + texture_idx_string.as_str()
+				+ ".png";
+
+			let output_path = output_dir.join(output_file_name);
+
+			debug!("saving image...");
+			image_buffer
+				.save_with_format(output_path, image::ImageFormat::Png)
+				.context("save file")?;
+			info!("Image saved");
 		}
 	}
 
