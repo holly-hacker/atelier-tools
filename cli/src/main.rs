@@ -61,7 +61,7 @@ struct PakSubCommand {
 #[derive(FromArgs)]
 #[argh(subcommand, name = "g1t")]
 struct G1tSubCommand {
-	/// the input .g1t file
+	/// the input .g1t file, or a directory containing .g1t files
 	#[argh(positional)]
 	pub input: PathBuf,
 
@@ -189,47 +189,71 @@ fn handle_pak(args: PakSubCommand) -> anyhow::Result<()> {
 fn handle_g1t(args: G1tSubCommand) -> anyhow::Result<()> {
 	debug!("g1t file: {:?}", args.input);
 
-	if !args.input.is_file() {
+	let input_files = if args.input.is_dir() {
+		let mut input_files = Vec::new();
+		for entry in std::fs::read_dir(&args.input)? {
+			let entry = entry?;
+			let path = entry.path();
+			if path.is_file()
+				&& path
+					.extension()
+					.map_or(false, |ext| ext.to_ascii_lowercase() == "g1t")
+			{
+				input_files.push(path);
+			}
+		}
+		info!("Found {} g1t files", input_files.len());
+		input_files
+	} else if args.input.is_file() {
+		vec![args.input.clone()]
+	} else {
 		Err(std::io::Error::new(
 			std::io::ErrorKind::NotFound,
-			"Path is not a file",
-		))?;
-	}
-	let mut file = File::open(&args.input)?;
+			"Path is not a file or directory",
+		))?
+	};
 
-	debug!("reading g1t file...");
-	let g1t = GustG1t::read(&mut file).context("read g1t file")?;
-	info!("Read g1t file");
+	for input in input_files {
+		let mut file = File::open(&input)?;
 
-	let texture_count = g1t.textures.len();
-	match texture_count {
-		0 => {
-			info!("No textures found");
-			return Ok(());
-		}
-		1 => {
-			let texture = &g1t.textures[0];
-			let image_bytes = g1t.read_image(texture, &mut file).context("read image")?;
-			let image_buffer =
-				image::RgbaImage::from_vec(texture.width, texture.height, image_bytes)
-					.context("image to rgbimage vec")?;
+		debug!("reading g1t file...");
+		let g1t = GustG1t::read(&mut file).context("read g1t file")?;
+		info!("Read g1t file");
 
-			let output_path = args.output.unwrap_or_else(|| {
-				trace!("no output path specified, using input directory");
-				args.input
-					.parent()
-					.expect("input path has no parent")
-					.join("image.png")
-			});
+		let texture_count = g1t.textures.len();
+		match texture_count {
+			0 => {
+				info!("No textures found");
+				return Ok(());
+			}
+			1 => {
+				let texture = &g1t.textures[0];
+				let image_bytes = g1t.read_image(texture, &mut file).context("read image")?;
+				let image_buffer =
+					image::RgbaImage::from_vec(texture.width, texture.height, image_bytes)
+						.context("image to rgbimage vec")?;
 
-			debug!("saving image...");
-			image_buffer
-				.save_with_format(output_path, image::ImageFormat::Png)
-				.context("save file")?;
-			info!("Image saved");
-		}
-		_ => {
-			todo!("write multiple textures");
+				let output_path = args.output.clone().unwrap_or_else(|| {
+					trace!("no output path specified, using input directory");
+					input.parent().expect("input path has no parent").join(
+						input
+							.file_stem()
+							.expect("get file stem")
+							.to_str()
+							.expect("file name to string")
+							.to_owned() + ".png",
+					)
+				});
+
+				debug!("saving image...");
+				image_buffer
+					.save_with_format(output_path, image::ImageFormat::Png)
+					.context("save file")?;
+				info!("Image saved");
+			}
+			_ => {
+				todo!("write multiple textures");
+			}
 		}
 	}
 
