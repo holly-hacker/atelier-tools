@@ -20,8 +20,8 @@ Functionality will likely be limited to PC versions of modern Atelier games that
 - `.g1t` parsing and decoding:
   - Platforms:
     - [x] Windows
-    - [ ] Playstation 2
-    - [ ] Playstation 4
+    - [ ] PlayStation 2
+    - [ ] PlayStation 4
     - [ ] Platforms not present in PC versions
   - Texture formats:
     - [x] RGBA8
@@ -53,11 +53,11 @@ g1t texture support:
 
 - Be a complete replacement for [gust_tools](https://github.com/VitaSmith/gust_tools): This project
   is (currently) not focused on encoding external assets to be used in the game, it only tries to
-  read these assets or convert them to useable formats.
+  read these assets or convert them to usable formats.
 - Support every single format and every single game: This project was born to support
   [atelier-wiki](https://github.com/holly-hacker/atelier-wiki) (as to not need any C dependencies)
   and because I thought it was a fun project. As such, I won't try to support every Atelier game
-  ever made and I'm unlikely to accept pull requests for games I don't personally own.
+  ever made, and I'm unlikely to accept pull requests for games I don't personally own.
 
 ## Acknowledgements
 
