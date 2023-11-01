@@ -17,12 +17,8 @@ Functionality will likely be limited to PC versions of modern Atelier games that
   - [x] Atelier Ryza 2
   - [x] Atelier Sophie 2
   - [x] Atelier Ryza 3
-- `.g1t` parsing and decoding:
-  - Platforms:
-    - [x] Windows
-    - [ ] PlayStation 2
-    - [ ] PlayStation 4
-    - [ ] Platforms not present in PC versions
+- `.g1t` parsing for most formats
+- DDS decoding:
   - Texture formats:
     - [x] RGBA8
     - [x] BC1/DXT1
