@@ -1,3 +1,5 @@
+pub use strum;
+
 use strum::EnumMessage;
 
 /// An enum of supported games.
