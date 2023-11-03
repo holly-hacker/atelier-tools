@@ -4,7 +4,9 @@ use strum::EnumMessage;
 ///
 /// If a game has some associated data that is specific to only 1 package, it should be defined in
 /// that package.
-#[derive(Debug, Copy, Clone, strum::EnumMessage, strum::EnumString, strum::EnumIter)]
+#[derive(
+	Debug, Copy, Clone, PartialEq, Eq, strum::EnumMessage, strum::EnumString, strum::EnumIter,
+)]
 #[strum(ascii_case_insensitive)]
 pub enum GameVersion {
 	/// Atelier Sophie: The Alchemist of the Mysterious Book
